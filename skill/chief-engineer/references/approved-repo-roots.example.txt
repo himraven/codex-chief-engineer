@@ -1,0 +1,6 @@
+# Local worker write policy. Copy this file to approved-repo-roots.local.txt.
+# Add one canonical Git repository root per line.
+# Project-local linked worktrees under <root>/.worktrees/ are also allowed.
+# Keep this local file out of source control.
+
+# /absolute/path/to/your/repository

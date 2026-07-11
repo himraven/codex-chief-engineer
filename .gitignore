@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.*
+*.local
+__pycache__/
+*.py[cod]
+
+# User-specific dispatch authority and local operational artifacts.
+skill/chief-engineer/references/approved-repo-roots.local.txt
+runs/
+*.events.jsonl
+*.manifest.json
+*.final.md
