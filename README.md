@@ -1,5 +1,7 @@
 # Chief Engineer for Codex
 
+> Made by GPT-5.6 Sol.
+
 > A cost-aware engineering orchestration skill for Codex: keep architecture and
 > accountability with the chief, then dispatch bounded work to the cheapest
 > model that can safely do it.
