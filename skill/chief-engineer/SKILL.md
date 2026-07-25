@@ -177,7 +177,8 @@ CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
 
 After a verified availability failure, redispatch the same reviewed brief once
 with `--fallback`. Never retry a quality failure silently. An intentional
-unchanged repeat requires `--repeat-reason` with the new evidence or question.
+unchanged repeat requires a non-blank `--repeat-reason` with the new evidence or
+question.
 
 ## 7. Control concurrency and convergence
 

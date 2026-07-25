@@ -330,6 +330,20 @@ class TokenReportTests(unittest.TestCase):
         self.assertIn("JUSTIFIED_REPEAT", result.stdout)
         self.assertIn("Current dispatch gate: clear", result.stdout)
 
+    def test_blank_repeat_reason_does_not_clear_gate(self) -> None:
+        self.write_manifest("run-1", fingerprint="same", started=100, finished=110)
+        self.write_manifest(
+            "run-2",
+            fingerprint="same",
+            started=111,
+            finished=120,
+            repeat_reason="   ",
+        )
+        result = self.report("OBJ-1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("UNCHANGED_SUCCESSFUL_REPEAT:run-2", result.stdout)
+        self.assertNotIn("JUSTIFIED_REPEAT", result.stdout)
+
     def test_concurrent_fanout_above_two_blocks(self) -> None:
         for index in range(3):
             self.write_manifest(
@@ -714,6 +728,25 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
             repeated = run(command, env=environment)
             self.assertEqual(repeated.returncode, 74)
             self.assertIn("Refusing unchanged successful repeat", repeated.stderr)
+
+            blank_repeat = run(
+                [*command, "--repeat-reason", "   "],
+                env=environment,
+            )
+            self.assertEqual(blank_repeat.returncode, 64)
+            self.assertIn(
+                "--repeat-reason must contain a non-whitespace justification",
+                blank_repeat.stderr,
+            )
+            unicode_blank_repeat = run(
+                [*command, "--repeat-reason", "\u00a0"],
+                env=environment,
+            )
+            self.assertEqual(unicode_blank_repeat.returncode, 64)
+            self.assertIn(
+                "--repeat-reason must contain a non-whitespace justification",
+                unicode_blank_repeat.stderr,
+            )
 
             scratch.write_text("untracked v2\n", encoding="utf-8")
             changed_evidence = run(command, env=environment)

@@ -542,7 +542,7 @@ def main() -> int:
             and manifest_text(successful_matches[0], "run_id", "") != run_id
         )
         if is_repeat and in_gate_scope:
-            if manifest_text(run, "repeat_reason", ""):
+            if manifest_text(run, "repeat_reason", "").strip():
                 direct_notes.add("JUSTIFIED_REPEAT")
             else:
                 blocking.append(f"UNCHANGED_SUCCESSFUL_REPEAT:{run_id}")

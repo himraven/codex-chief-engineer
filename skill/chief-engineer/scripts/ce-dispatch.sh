@@ -103,6 +103,7 @@ brief=""
 result_dir=""
 approval_file=""
 repeat_reason=""
+repeat_reason_supplied=false
 fallback=false
 
 while [[ $# -gt 0 ]]; do
@@ -115,7 +116,7 @@ while [[ $# -gt 0 ]]; do
     --brief) brief="${2:-}"; shift 2 ;;
     --result-dir) result_dir="${2:-}"; shift 2 ;;
     --approval-file) approval_file="${2:-}"; shift 2 ;;
-    --repeat-reason) repeat_reason="${2:-}"; shift 2 ;;
+    --repeat-reason) repeat_reason="${2:-}"; repeat_reason_supplied=true; shift 2 ;;
     --fallback) fallback=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 64 ;;
@@ -126,12 +127,25 @@ if [[ -z "$role" || -z "$objective_id" || -z "$phase_id" || -z "$workstream_id" 
   usage >&2
   exit 64
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  printf 'python3 is required for input and artifact validation.\n' >&2
+  exit 71
+fi
 for lifecycle_id in "$objective_id" "$phase_id" "$workstream_id"; do
   if [[ ! "$lifecycle_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
     printf 'Lifecycle IDs must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}: %q\n' "$lifecycle_id" >&2
     exit 64
   fi
 done
+if [[ "$repeat_reason_supplied" == true ]]; then
+  repeat_reason=$(
+    python3 -c 'import sys; print(sys.argv[1].strip(), end="")' "$repeat_reason"
+  )
+  if [[ -z "$repeat_reason" ]]; then
+    printf '%s\n' '--repeat-reason must contain a non-whitespace justification.' >&2
+    exit 64
+  fi
+fi
 
 case "$role" in
   scout)
@@ -197,10 +211,6 @@ repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || {
   exit 69
 }
 repo_root=$(cd "$repo_root" && pwd -P)
-if ! command -v python3 >/dev/null 2>&1; then
-  printf 'python3 is required to validate artifact paths.\n' >&2
-  exit 71
-fi
 result_dir=$(
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$result_dir"
 )

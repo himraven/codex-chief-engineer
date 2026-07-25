@@ -144,7 +144,7 @@ untracked files plus dirty state inside initialized submodules. The operational
 evidence; each linked worktree is fingerprinted when it is the dispatch target.
 Final diff fingerprints stay relative to the tree captured at dispatch, even
 when an executor commits before returning. Repeating an unchanged input requires
-`--repeat-reason` with the new evidence or question.
+a non-blank `--repeat-reason` with the new evidence or question.
 
 The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw
