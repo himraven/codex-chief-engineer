@@ -73,7 +73,7 @@ def event_local_day(timestamp: Any) -> str | None:
 def day_bounds(date_text: str) -> tuple[int, int]:
     day = dt.date.fromisoformat(date_text)
     start = dt.datetime.combine(day, dt.time.min).astimezone()
-    end = start + dt.timedelta(days=1)
+    end = dt.datetime.combine(day + dt.timedelta(days=1), dt.time.min).astimezone()
     return int(start.timestamp()), int(end.timestamp())
 
 
@@ -355,6 +355,7 @@ def main() -> int:
         if metrics_by_id[row["id"]]["usage"]["turns"]
         or metrics_by_id[row["id"]]["compactions"]
         or metrics_by_id[row["id"]]["tool_calls"]
+        or metrics_by_id[row["id"]]["unreadable"]
     ]
 
     by_model: dict[tuple[str, str], dict[str, Any]] = defaultdict(

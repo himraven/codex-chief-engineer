@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import sqlite3
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -13,6 +15,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REPORT = REPO_ROOT / "skill/chief-engineer/scripts/ce-token-report.py"
 DISPATCH = REPO_ROOT / "skill/chief-engineer/scripts/ce-dispatch.sh"
+REPORT_SPEC = importlib.util.spec_from_file_location("ce_token_report", REPORT)
+assert REPORT_SPEC and REPORT_SPEC.loader
+REPORT_MODULE = importlib.util.module_from_spec(REPORT_SPEC)
+REPORT_SPEC.loader.exec_module(REPORT_MODULE)
 
 
 def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -26,6 +32,22 @@ def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str
 
 
 class TokenReportTests(unittest.TestCase):
+    def test_day_bounds_localize_both_midnights_across_dst(self) -> None:
+        if not hasattr(time, "tzset"):
+            self.skipTest("tzset is unavailable")
+        previous_timezone = os.environ.get("TZ")
+        try:
+            os.environ["TZ"] = "America/New_York"
+            time.tzset()
+            start, end = REPORT_MODULE.day_bounds("2026-11-01")
+            self.assertEqual(end - start, 25 * 60 * 60)
+        finally:
+            if previous_timezone is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = previous_timezone
+            time.tzset()
+
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.codex_home = Path(self.tempdir.name)
@@ -195,6 +217,28 @@ class TokenReportTests(unittest.TestCase):
         self.assertNotIn("private title", result.stdout)
         self.assertIn("Current dispatch gate: not evaluated", result.stdout)
         self.assertIn("do not create tasks or block unrelated work", result.stdout)
+
+    def test_unreadable_rollout_remains_visible_as_advisory(self) -> None:
+        database = sqlite3.connect(self.codex_home / "state_5.sqlite")
+        database.execute(
+            "INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "22222222-2222-2222-2222-222222222222",
+                str(self.codex_home / "missing-rollout.jsonl"),
+                1784764800,
+                1785024000,
+                "gpt-5.6-sol",
+                "xhigh",
+                "unreadable title",
+                "unreadable prompt",
+            ),
+        )
+        database.commit()
+        database.close()
+        result = self.report()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Active tasks: 2", result.stdout)
+        self.assertIn("ROLLOUT_UNREADABLE", result.stdout)
 
     def test_unjustified_unchanged_repeat_blocks_current_gate(self) -> None:
         self.write_manifest("run-1", fingerprint="same", started=100, finished=110)
