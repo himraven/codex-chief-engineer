@@ -291,7 +291,15 @@ head_sha=$(git -C "$repo_root" rev-parse --verify HEAD 2>/dev/null || printf 'UN
 initial_base_tree=$(git_base_tree "$repo_root")
 initial_repo_fingerprint=$(repo_fingerprint "$repo_root")
 input_fingerprint=$(
-  printf '%s\n' "$objective_id" "$workstream_id" "$role" "$brief_sha" "$head_sha" "$initial_repo_fingerprint" |
+  printf '%s\n' \
+    "repo-root:$repo_root" \
+    "cwd:$cwd" \
+    "$objective_id" \
+    "$workstream_id" \
+    "$role" \
+    "$brief_sha" \
+    "$head_sha" \
+    "$initial_repo_fingerprint" |
     sha256_stream
 )
 

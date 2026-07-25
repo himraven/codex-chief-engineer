@@ -137,15 +137,17 @@ allowlist, oversized briefs, and result directories inside the repository.
 Keeping `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME` outside the repository
 prevents adapter artifacts from becoming new evidence. The adapter also
 fingerprints the objective/workstream identity, brief, commit, and repository
-state. Deduplication intentionally excludes the phase ID: unchanged evidence
-remains unchanged after a phase rollover. Repository state includes tracked and
-untracked files—including untracked regular-file modes—plus dirty state inside
-initialized submodules. The operational `.worktrees/` container is excluded
-from the primary checkout's untracked evidence; each linked worktree is
-fingerprinted when it is the dispatch target. Final diff fingerprints stay
-relative to the tree captured at dispatch, even when an executor commits before
-returning. Repeating an unchanged input requires a non-blank `--repeat-reason`
-with the new evidence or question.
+state, plus the canonical repository root and effective working directory.
+Deduplication intentionally excludes the phase ID: unchanged evidence remains
+unchanged after a phase rollover, while an identical brief aimed at another
+repository or subdirectory remains a distinct dispatch. Repository state
+includes tracked and untracked files—including untracked regular-file
+modes—plus dirty state inside initialized submodules. The operational
+`.worktrees/` container is excluded from the primary checkout's untracked
+evidence; each linked worktree is fingerprinted when it is the dispatch target.
+Final diff fingerprints stay relative to the tree captured at dispatch, even
+when an executor commits before returning. Repeating an unchanged input requires
+a non-blank `--repeat-reason` with the new evidence or question.
 
 Ignored files are deliberately outside automatic repository fingerprinting:
 hashing caches, dependencies, build output, and secrets would be expensive and

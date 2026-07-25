@@ -653,6 +653,8 @@ class DispatchTests(unittest.TestCase):
             scratch = repository / "scratch.txt"
             scratch.write_text("untracked v1\n", encoding="utf-8")
             scratch.chmod(0o644)
+            execution_subdir = repository / "execution-subdir"
+            execution_subdir.mkdir()
             outside_link = repository / "outside-link"
             outside_link.symlink_to("/dev/zero")
 
@@ -821,6 +823,21 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
             self.assertEqual(manifest["workstream_id"], "WS-evidence")
             self.assertEqual(len(manifest["input_fingerprint"]), 64)
             self.assertEqual(len(manifest["final_diff_sha256"]), 64)
+
+            subdir_command = command.copy()
+            subdir_command[subdir_command.index("--cwd") + 1] = str(execution_subdir)
+            different_target = run(
+                subdir_command,
+                env=environment,
+                cwd=stat_probe_cwd,
+            )
+            self.assertEqual(different_target.returncode, 0, different_target.stderr)
+            repeated_subdir = run(
+                subdir_command,
+                env=environment,
+                cwd=stat_probe_cwd,
+            )
+            self.assertEqual(repeated_subdir.returncode, 74)
 
             repeated = run(command, env=environment, cwd=stat_probe_cwd)
             self.assertEqual(repeated.returncode, 74)
