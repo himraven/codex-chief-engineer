@@ -186,6 +186,7 @@ class TokenReportTests(unittest.TestCase):
         finished: int,
         repeat_reason: str = "",
         role: str = "worker",
+        objective_id: str = "OBJ-1",
         phase_id: str = "P1",
         run_home: Path | None = None,
         exit_status: int = 0,
@@ -195,7 +196,7 @@ class TokenReportTests(unittest.TestCase):
         directory.mkdir(parents=True, exist_ok=True)
         manifest = {
             "run_id": run_id,
-            "objective_id": "OBJ-1",
+            "objective_id": objective_id,
             "phase_id": phase_id,
             "workstream_id": f"WS-{run_id}",
             "role": role,
@@ -321,6 +322,39 @@ class TokenReportTests(unittest.TestCase):
         self.assertIn(
             f"DIRECT_MANIFEST_INVALID:{original.name}",
             conflict_result.stdout,
+        )
+
+    def test_duplicate_manifest_conflict_stays_scoped_to_agreed_objective(
+        self,
+    ) -> None:
+        original = self.write_manifest(
+            "other-objective-run",
+            fingerprint="other-objective",
+            started=100,
+            finished=110,
+            objective_id="OBJ-2",
+        )
+        duplicate_dir = self.codex_home / "chief-engineer-runs/results"
+        duplicate_dir.mkdir(parents=True)
+        conflicting_copy = duplicate_dir / original.name
+        copyfile(original, conflicting_copy)
+        conflicting_manifest = json.loads(conflicting_copy.read_text(encoding="utf-8"))
+        conflicting_manifest["usage"]["total_tokens"] = 13
+        conflicting_copy.write_text(json.dumps(conflicting_manifest), encoding="utf-8")
+
+        unrelated_gate = self.report("OBJ-1")
+        self.assertEqual(unrelated_gate.returncode, 0, unrelated_gate.stdout)
+        self.assertIn(
+            "OUT_OF_SCOPE_OR_UNATTRIBUTED_MANIFEST_ERROR",
+            unrelated_gate.stdout,
+        )
+        self.assertIn("Current dispatch gate: clear", unrelated_gate.stdout)
+
+        related_gate = self.report("OBJ-2")
+        self.assertEqual(related_gate.returncode, 2, related_gate.stdout)
+        self.assertIn(
+            f"DIRECT_MANIFEST_INVALID:{original.name}",
+            related_gate.stdout,
         )
 
     def test_unreadable_rollout_remains_visible_as_advisory(self) -> None:
@@ -618,6 +652,7 @@ class DispatchTests(unittest.TestCase):
             )
             scratch = repository / "scratch.txt"
             scratch.write_text("untracked v1\n", encoding="utf-8")
+            scratch.chmod(0o644)
             outside_link = repository / "outside-link"
             outside_link.symlink_to("/dev/zero")
 
@@ -767,7 +802,11 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 relative_run.stderr,
             )
 
-            first = run(command, env=environment)
+            stat_probe_cwd = root / "stat-probe"
+            stat_probe_cwd.mkdir()
+            (stat_probe_cwd / "%Lp").write_text("GNU stat trap\n", encoding="utf-8")
+
+            first = run(command, env=environment, cwd=stat_probe_cwd)
             self.assertEqual(first.returncode, 0, first.stderr)
             manifest_path = Path(
                 next(
@@ -783,7 +822,7 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
             self.assertEqual(len(manifest["input_fingerprint"]), 64)
             self.assertEqual(len(manifest["final_diff_sha256"]), 64)
 
-            repeated = run(command, env=environment)
+            repeated = run(command, env=environment, cwd=stat_probe_cwd)
             self.assertEqual(repeated.returncode, 74)
             self.assertIn("Refusing unchanged successful repeat", repeated.stderr)
 
@@ -805,6 +844,10 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 "--repeat-reason must contain a non-whitespace justification",
                 unicode_blank_repeat.stderr,
             )
+
+            scratch.chmod(0o755)
+            changed_mode = run(command, env=environment, cwd=stat_probe_cwd)
+            self.assertEqual(changed_mode.returncode, 0, changed_mode.stderr)
 
             scratch.write_text("untracked v2\n", encoding="utf-8")
             changed_evidence = run(command, env=environment)

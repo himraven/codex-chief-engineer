@@ -32,6 +32,12 @@ sha256_file() {
   sha256_stream < "$1"
 }
 
+file_mode() {
+  python3 -c \
+    'import os, stat, sys; print(f"{stat.S_IMODE(os.stat(sys.argv[1]).st_mode):04o}")' \
+    "$1"
+}
+
 git_base_tree() {
   local repository="$1"
   git -C "$repository" rev-parse --verify HEAD 2>/dev/null ||
@@ -42,7 +48,8 @@ worktree_fingerprint() {
   local repository="$1"
   local base_tree="${2:-}"
   local max_untracked_bytes="${CE_MAX_UNTRACKED_FINGERPRINT_BYTES:-67108864}"
-  local submodule_path submodule_root untracked_path untracked_file untracked_bytes
+  local submodule_path submodule_root untracked_path untracked_file
+  local untracked_bytes untracked_mode
   if [[ ! "$max_untracked_bytes" =~ ^[0-9]+$ ]]; then
     printf 'CE_MAX_UNTRACKED_FINGERPRINT_BYTES must be a non-negative integer.\n' >&2
     return 1
@@ -65,6 +72,8 @@ worktree_fingerprint() {
             "$untracked_bytes" "$max_untracked_bytes" "$untracked_path" >&2
           return 1
         fi
+        untracked_mode=$(file_mode "$untracked_file") || return 1
+        printf 'mode:%s\n' "$untracked_mode"
         sha256_file "$untracked_file"
       else
         printf 'Refusing to fingerprint untracked special file: %s\n' "$untracked_path" >&2

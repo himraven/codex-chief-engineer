@@ -249,10 +249,17 @@ def deduplicate_manifests(
             key: value for key, value in manifest.items() if key != "_manifest_path"
         }
         if existing_payload != manifest_payload:
+            existing_objective = manifest_text(existing, "objective_id", "")
+            manifest_objective = manifest_text(manifest, "objective_id", "")
+            objective_id = (
+                existing_objective
+                if existing_objective and existing_objective == manifest_objective
+                else ""
+            )
             errors.append(
                 {
                     "path": manifest_text(manifest, "_manifest_path", run_id),
-                    "objective_id": "",
+                    "objective_id": objective_id,
                     "all_dates": "true",
                 }
             )
