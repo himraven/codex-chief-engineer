@@ -41,6 +41,7 @@ git_base_tree() {
 worktree_fingerprint() {
   local repository="$1"
   local max_untracked_bytes="${CE_MAX_UNTRACKED_FINGERPRINT_BYTES:-67108864}"
+  local submodule_path submodule_root untracked_path untracked_file untracked_bytes
   if [[ ! "$max_untracked_bytes" =~ ^[0-9]+$ ]]; then
     printf 'CE_MAX_UNTRACKED_FINGERPRINT_BYTES must be a non-negative integer.\n' >&2
     return 1
@@ -66,6 +67,15 @@ worktree_fingerprint() {
         return 1
       fi
     done < <(git -C "$repository" ls-files --others --exclude-standard -z)
+    while IFS= read -r -d '' submodule_path; do
+      submodule_root="$repository/$submodule_path"
+      printf 'submodule:%s\n' "$submodule_path"
+      worktree_fingerprint "$submodule_root" || exit 1
+    done < <(
+      # shellcheck disable=SC2016
+      git -C "$repository" submodule foreach --quiet \
+        'printf "%s\0" "$sm_path"'
+    )
   } | sha256_stream
 }
 
@@ -252,6 +262,10 @@ events="$result_dir/${run_id}.events.jsonl"
 final="$result_dir/${run_id}.final.md"
 manifest="$result_dir/${run_id}.manifest.json"
 run_home="${CE_RUN_HOME:-$codex_home/chief-engineer-runs}"
+if [[ "$run_home" != /* ]]; then
+  printf 'CE_RUN_HOME (or CODEX_HOME) must resolve to an absolute path: %s\n' "$run_home" >&2
+  exit 64
+fi
 index_dir="$run_home/$(date +%F)"
 index_manifest="$index_dir/${run_id}.manifest.json"
 mkdir -p "$index_dir"

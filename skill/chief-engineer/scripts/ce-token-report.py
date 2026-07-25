@@ -274,17 +274,30 @@ def parse_args() -> argparse.Namespace:
         "--objective-id",
         help="Evaluate the blocking dispatch gate only for this objective",
     )
+    parser.add_argument(
+        "--run-home",
+        type=Path,
+        help=(
+            "Manifest index root "
+            "(default: CE_RUN_HOME or CODEX_HOME/chief-engineer-runs)"
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    args.codex_home = args.codex_home.expanduser().resolve()
     try:
         start_epoch, end_epoch = day_bounds(args.date)
     except ValueError as exc:
         raise SystemExit(f"Invalid --date {args.date!r}; use YYYY-MM-DD") from exc
     if args.limit < 1:
         raise SystemExit("--limit must be at least 1")
+    if args.objective_id is not None and not LIFECYCLE_ID_PATTERN.fullmatch(
+        args.objective_id
+    ):
+        raise SystemExit(f"--objective-id must match {LIFECYCLE_ID_PATTERN.pattern}")
 
     db_path = args.codex_home / "state_5.sqlite"
     if not db_path.is_file():
@@ -413,7 +426,17 @@ def main() -> int:
             group["flags"].add(flag)
             advisory_flags.add(flag.split("=")[0])
 
-    direct_run_dir = args.codex_home / "chief-engineer-runs" / args.date
+    if args.run_home:
+        run_home = args.run_home.expanduser().resolve()
+    elif os.environ.get("CE_RUN_HOME"):
+        run_home = Path(os.environ["CE_RUN_HOME"])
+        if not run_home.is_absolute():
+            raise SystemExit("CE_RUN_HOME must resolve to an absolute path")
+        run_home = run_home.resolve()
+    else:
+        run_home = args.codex_home / "chief-engineer-runs"
+
+    direct_run_dir = run_home / args.date
     direct_paths = (
         sorted(direct_run_dir.glob("*.manifest.json"))
         if direct_run_dir.is_dir()
@@ -421,9 +444,7 @@ def main() -> int:
     )
     direct_runs, direct_errors = read_manifests(direct_paths)
     all_manifest_paths = (
-        sorted((args.codex_home / "chief-engineer-runs").glob("*/*.manifest.json"))
-        if (args.codex_home / "chief-engineer-runs").is_dir()
-        else []
+        sorted(run_home.glob("*/*.manifest.json")) if run_home.is_dir() else []
     )
     all_runs, _ = read_manifests(all_manifest_paths)
 

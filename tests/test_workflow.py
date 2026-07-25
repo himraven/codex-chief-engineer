@@ -154,7 +154,11 @@ class TokenReportTests(unittest.TestCase):
         self.tempdir.cleanup()
 
     def report(
-        self, objective_id: str | None = None
+        self,
+        objective_id: str | None = None,
+        *,
+        run_home: Path | None = None,
+        env: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
         command = [
             "python3",
@@ -164,9 +168,11 @@ class TokenReportTests(unittest.TestCase):
             "--codex-home",
             str(self.codex_home),
         ]
-        if objective_id:
+        if objective_id is not None:
             command.extend(["--objective-id", objective_id])
-        return run(command)
+        if run_home:
+            command.extend(["--run-home", str(run_home)])
+        return run(command, env=env)
 
     def write_manifest(
         self,
@@ -177,8 +183,10 @@ class TokenReportTests(unittest.TestCase):
         finished: int,
         repeat_reason: str = "",
         role: str = "worker",
+        run_home: Path | None = None,
+        exit_status: int = 0,
     ) -> Path:
-        directory = self.codex_home / "chief-engineer-runs/2026-07-24"
+        directory = (run_home or self.codex_home / "chief-engineer-runs") / "2026-07-24"
         directory.mkdir(parents=True, exist_ok=True)
         manifest = {
             "run_id": run_id,
@@ -190,7 +198,7 @@ class TokenReportTests(unittest.TestCase):
             "reasoning_effort": "low",
             "observed_model": "gpt-5.6-luna",
             "budget_state": "within_budget",
-            "exit_status": 0,
+            "exit_status": exit_status,
             "input_fingerprint": hashlib.sha256(fingerprint.encode()).hexdigest(),
             "repeat_reason": repeat_reason,
             "started_at_epoch": started,
@@ -217,6 +225,63 @@ class TokenReportTests(unittest.TestCase):
         self.assertNotIn("private title", result.stdout)
         self.assertIn("Current dispatch gate: not evaluated", result.stdout)
         self.assertIn("do not create tasks or block unrelated work", result.stdout)
+
+    def test_invalid_objective_id_is_rejected(self) -> None:
+        result = self.report("OBJ/1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--objective-id must match", result.stderr)
+
+        empty_result = self.report("")
+        self.assertNotEqual(empty_result.returncode, 0)
+        self.assertIn("--objective-id must match", empty_result.stderr)
+
+    def test_explicit_run_home_matches_dispatch_manifest_index(self) -> None:
+        environment_run_home = self.codex_home / "environment-run-index"
+        self.write_manifest(
+            "failed-run",
+            fingerprint="failed",
+            started=100,
+            finished=110,
+            run_home=environment_run_home,
+            exit_status=1,
+        )
+        environment = os.environ.copy()
+        environment["CE_RUN_HOME"] = str(environment_run_home)
+        result = self.report("OBJ-1", env=environment)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("DIRECT_RUN_FAILED:failed-run", result.stdout)
+
+        explicit_run_home = self.codex_home / "explicit-run-index"
+        override_result = self.report(
+            "OBJ-1",
+            run_home=explicit_run_home,
+            env=environment,
+        )
+        self.assertEqual(override_result.returncode, 0, override_result.stdout)
+        self.assertIn("Current dispatch gate: clear", override_result.stdout)
+
+    def test_relative_environment_run_home_is_rejected(self) -> None:
+        environment = os.environ.copy()
+        environment["CE_RUN_HOME"] = "relative-run-index"
+        result = run(
+            [
+                "python3",
+                str(REPORT),
+                "--date",
+                "2026-07-24",
+                "--codex-home",
+                str(self.codex_home),
+                "--objective-id",
+                "OBJ-1",
+            ],
+            cwd=self.codex_home,
+            env=environment,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "CE_RUN_HOME must resolve to an absolute path",
+            result.stderr,
+        )
 
     def test_unreadable_rollout_remains_visible_as_advisory(self) -> None:
         database = sqlite3.connect(self.codex_home / "state_5.sqlite")
@@ -380,6 +445,66 @@ class DispatchTests(unittest.TestCase):
                 ["git", "-C", str(repository), "commit", "-qm", "test fixture"],
                 check=True,
             )
+            submodule_source = root / "submodule-source"
+            submodule_source.mkdir()
+            subprocess.run(["git", "init", "-q", str(submodule_source)], check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(submodule_source),
+                    "config",
+                    "user.email",
+                    "test@example.com",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(submodule_source),
+                    "config",
+                    "user.name",
+                    "Test",
+                ],
+                check=True,
+            )
+            (submodule_source / "evidence.txt").write_text("clean\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "-C", str(submodule_source), "add", "evidence.txt"],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(submodule_source),
+                    "commit",
+                    "-qm",
+                    "submodule fixture",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repository),
+                    "-c",
+                    "protocol.file.allow=always",
+                    "submodule",
+                    "add",
+                    "-q",
+                    str(submodule_source),
+                    "modules/evidence",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(repository), "commit", "-qam", "add submodule"],
+                check=True,
+            )
             scratch = repository / "scratch.txt"
             scratch.write_text("untracked v1\n", encoding="utf-8")
             outside_link = repository / "outside-link"
@@ -442,6 +567,19 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 "--result-dir",
                 str(root / "results"),
             ]
+            relative_run_environment = environment.copy()
+            relative_run_environment["CE_RUN_HOME"] = "relative-run-index"
+            relative_run = run(
+                command,
+                cwd=submodule_source,
+                env=relative_run_environment,
+            )
+            self.assertEqual(relative_run.returncode, 64)
+            self.assertIn(
+                "CE_RUN_HOME (or CODEX_HOME) must resolve to an absolute path",
+                relative_run.stderr,
+            )
+
             first = run(command, env=environment)
             self.assertEqual(first.returncode, 0, first.stderr)
             manifest_path = Path(
@@ -473,6 +611,43 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 [*command, "--repeat-reason", "new runtime evidence"], env=environment
             )
             self.assertEqual(justified.returncode, 0, justified.stderr)
+
+            submodule_file = repository / "modules/evidence/evidence.txt"
+            submodule_file.write_text("dirty v1\n", encoding="utf-8")
+            first_dirty_submodule = run(command, env=environment)
+            self.assertEqual(
+                first_dirty_submodule.returncode, 0, first_dirty_submodule.stderr
+            )
+            repeated_dirty_submodule = run(command, env=environment)
+            self.assertEqual(repeated_dirty_submodule.returncode, 74)
+            submodule_file.write_text("dirty v2\n", encoding="utf-8")
+            changed_dirty_submodule = run(command, env=environment)
+            self.assertEqual(
+                changed_dirty_submodule.returncode, 0, changed_dirty_submodule.stderr
+            )
+            submodule_file.write_text("clean\n", encoding="utf-8")
+
+            submodule_untracked = repository / "modules/evidence/untracked.txt"
+            submodule_untracked.write_text("a" * 32, encoding="utf-8")
+            untracked_submodule = run(command, env=environment)
+            self.assertEqual(
+                untracked_submodule.returncode, 0, untracked_submodule.stderr
+            )
+            repeated_untracked_submodule = run(command, env=environment)
+            self.assertEqual(repeated_untracked_submodule.returncode, 74)
+
+            oversized_submodule_environment = environment.copy()
+            oversized_submodule_environment["CE_MAX_UNTRACKED_FINGERPRINT_BYTES"] = "16"
+            oversized_submodule = run(
+                command,
+                env=oversized_submodule_environment,
+            )
+            self.assertNotEqual(oversized_submodule.returncode, 0)
+            self.assertIn(
+                "Refusing to fingerprint oversized untracked file",
+                oversized_submodule.stderr,
+            )
+            submodule_untracked.unlink()
 
             scratch.unlink()
             outside_link.unlink()

@@ -136,8 +136,9 @@ Sol as a worker, non-Git directories, shared checkouts, roots outside the local
 allowlist, and oversized briefs. It also fingerprints the objective/workstream
 identity, brief, commit, and repository state. Deduplication intentionally
 excludes the phase ID: unchanged evidence remains unchanged after a phase
-rollover. Repeating it requires `--repeat-reason` with the new evidence or
-question.
+rollover. Repository state includes tracked and untracked files plus dirty
+state inside initialized submodules. Repeating it requires `--repeat-reason`
+with the new evidence or question.
 
 The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw
@@ -177,6 +178,11 @@ python3 "$CE/scripts/ce-token-report.py" \
   --date 2026-07-11 \
   --objective-id OBJ-001
 ```
+
+The report follows the absolute `CE_RUN_HOME`, matching the dispatch adapter.
+Relative environment paths are rejected so dispatch and reporting cannot
+silently resolve different indexes. Use `--run-home` to inspect a different
+local manifest index explicitly.
 
 Use `--include-titles` only when it is safe for those local titles to appear in
 your terminal output. Historical compaction and long-context signals are
