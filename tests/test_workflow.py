@@ -293,6 +293,17 @@ class TokenReportTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("DIRECT_MANIFEST_INVALID:malformed.manifest.json", result.stdout)
 
+    def test_unattributed_invalid_json_fails_closed_when_scoped(self) -> None:
+        directory = self.codex_home / "chief-engineer-runs/2026-07-24"
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "truncated.manifest.json").write_text(
+            '{"objective_id":',
+            encoding="utf-8",
+        )
+        result = self.report("OBJ-1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("DIRECT_MANIFEST_INVALID:truncated.manifest.json", result.stdout)
+
     def test_missing_gate_fields_fail_closed(self) -> None:
         path = self.write_manifest(
             "run-missing-fields",

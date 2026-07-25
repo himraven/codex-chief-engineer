@@ -336,6 +336,7 @@ elif [[ "$fingerprint_state" != "complete" ]]; then
   gate_status=75
 fi
 
+manifest_tmp=$(mktemp "$result_dir/.${run_id}.manifest.XXXXXX")
 jq -n \
   --arg run_id "$run_id" --arg objective_id "$objective_id" --arg phase_id "$phase_id" \
   --arg workstream_id "$workstream_id" --arg role "$role" --arg requested_model "$model" \
@@ -374,8 +375,11 @@ jq -n \
     started_at_epoch: $started_at, finished_at_epoch: $finished_at,
     tool_budget: $tool_budget, actual_tool_calls: $actual_tool_calls,
     final_output_budget_bytes: $final_budget_bytes,
-    final_output_bytes: $final_bytes, budget_state: $budget_state}' > "$manifest"
-cp -p "$manifest" "$index_manifest"
+    final_output_bytes: $final_bytes, budget_state: $budget_state}' > "$manifest_tmp"
+mv "$manifest_tmp" "$manifest"
+index_manifest_tmp=$(mktemp "$index_dir/.${run_id}.manifest.XXXXXX")
+cp -p "$manifest" "$index_manifest_tmp"
+mv "$index_manifest_tmp" "$index_manifest"
 
 printf 'run_id=%s\nmanifest=%s\nindex_manifest=%s\nfinal=%s\nevents=%s\nrequested_model=%s\nobserved_model=%s\ncodex_exit_status=%s\nbudget_state=%s\nfingerprint_state=%s\nexit_status=%s\n' \
   "$run_id" "$manifest" "$index_manifest" "$final" "$events" "$model" "${observed_model}" "$status" "$budget_state" "$fingerprint_state" "$gate_status"

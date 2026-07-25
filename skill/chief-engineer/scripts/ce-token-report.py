@@ -437,7 +437,7 @@ def main() -> int:
     direct_notes: set[str] = set()
     phase_groups: dict[tuple[str, str], dict[str, Any]] = {}
     for error in direct_errors:
-        if args.objective_id and error["objective_id"] == args.objective_id:
+        if args.objective_id and error["objective_id"] in {"", args.objective_id}:
             blocking.append(f"DIRECT_MANIFEST_INVALID:{Path(error['path']).name}")
         else:
             direct_notes.add("OUT_OF_SCOPE_OR_UNATTRIBUTED_MANIFEST_ERROR")
