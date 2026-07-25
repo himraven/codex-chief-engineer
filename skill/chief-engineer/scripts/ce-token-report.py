@@ -512,6 +512,7 @@ def main() -> int:
     blocking: list[str] = []
     direct_notes: set[str] = set()
     phase_groups: dict[tuple[str, str], dict[str, Any]] = {}
+    objective_write_runs: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for error in direct_errors:
         if args.objective_id and error["objective_id"] in {"", args.objective_id}:
             blocking.append(f"DIRECT_MANIFEST_INVALID:{Path(error['path']).name}")
@@ -556,6 +557,7 @@ def main() -> int:
         phase_group["runs"].append(run)
         if manifest_text(run, "role", "") in WRITE_ROLES:
             phase_group["write_runs"].append(run)
+            objective_write_runs[objective].append(run)
         phase_group["workstreams"].add(workstream)
         if manifest_text(run, "_manifest_path", "") in direct_usage_paths:
             add_usage(phase_group["usage"], direct_run_usage(run))
@@ -585,10 +587,11 @@ def main() -> int:
         write_overlap = maximum_overlap(group["write_runs"])
         group["peak_concurrency"] = overlap
         group["peak_write_concurrency"] = write_overlap
+
+    for objective, write_runs in objective_write_runs.items():
+        write_overlap = maximum_overlap(write_runs)
         if write_overlap > FANOUT_LIMIT and args.objective_id == objective:
-            blocking.append(
-                f"CONCURRENT_WRITE_FANOUT>{FANOUT_LIMIT}:{objective}/{phase}"
-            )
+            blocking.append(f"CONCURRENT_WRITE_FANOUT>{FANOUT_LIMIT}:{objective}")
         elif write_overlap > FANOUT_LIMIT:
             direct_notes.add("OUT_OF_SCOPE_WRITE_FANOUT_ALERT")
 

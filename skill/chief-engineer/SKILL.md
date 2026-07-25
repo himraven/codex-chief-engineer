@@ -208,10 +208,12 @@ afterward, update that digest or record the new evidence with
 
 Use `scripts/ce-token-report.py` for exact daily turn usage, cached versus
 uncached input, phase manifests, repeated fingerprints, and concurrent write
-fan-out. Historical session-health alerts are advisory; current dispatch
-failures and guardrail violations are a manual pre-wave gate: run the report
-with `--objective-id`, and do not dispatch the next wave when it exits nonzero.
-The adapter does not invoke this potentially expensive report automatically.
+fan-out. The blocking write-concurrency check spans the whole objective, even
+when runs carry different phase IDs; phase rows are diagnostic only. Historical
+session-health alerts are advisory; current dispatch failures and guardrail
+violations are a manual pre-wave gate: run the report with `--objective-id`,
+and do not dispatch the next wave when it exits nonzero. The adapter does not
+invoke this potentially expensive report automatically.
 
 ## Completion standard
 

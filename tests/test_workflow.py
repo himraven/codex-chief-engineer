@@ -186,6 +186,7 @@ class TokenReportTests(unittest.TestCase):
         finished: int,
         repeat_reason: str = "",
         role: str = "worker",
+        phase_id: str = "P1",
         run_home: Path | None = None,
         exit_status: int = 0,
         index_date: str = "2026-07-24",
@@ -195,7 +196,7 @@ class TokenReportTests(unittest.TestCase):
         manifest = {
             "run_id": run_id,
             "objective_id": "OBJ-1",
-            "phase_id": "P1",
+            "phase_id": phase_id,
             "workstream_id": f"WS-{run_id}",
             "role": role,
             "requested_model": "gpt-5.6-luna",
@@ -389,7 +390,21 @@ class TokenReportTests(unittest.TestCase):
             )
         result = self.report("OBJ-1")
         self.assertEqual(result.returncode, 2)
-        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", result.stdout)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1", result.stdout)
+
+    def test_concurrent_fanout_across_phases_blocks_objective(self) -> None:
+        for index in range(3):
+            self.write_manifest(
+                f"cross-phase-{index}",
+                fingerprint=f"cross-phase-{index}",
+                started=100,
+                finished=120,
+                phase_id=f"P{index + 1}",
+            )
+        result = self.report("OBJ-1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1", result.stdout)
+        self.assertEqual(result.stdout.count("| 1 / 1 |"), 3)
 
     def test_cross_midnight_runs_gate_both_days_and_count_on_completion_day(
         self,
@@ -405,7 +420,7 @@ class TokenReportTests(unittest.TestCase):
 
         previous_day = self.report("OBJ-1", date="2026-07-23")
         self.assertEqual(previous_day.returncode, 2)
-        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", previous_day.stdout)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1", previous_day.stdout)
         self.assertIn(
             "Direct ephemeral completions: 0 | Overlapping runs: 3 | Tokens: 0",
             previous_day.stdout,
@@ -413,7 +428,7 @@ class TokenReportTests(unittest.TestCase):
 
         completion_day = self.report("OBJ-1")
         self.assertEqual(completion_day.returncode, 2)
-        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", completion_day.stdout)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1", completion_day.stdout)
         self.assertIn(
             "Direct ephemeral completions: 3 | Overlapping runs: 3 | Tokens: 36",
             completion_day.stdout,

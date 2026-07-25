@@ -207,9 +207,11 @@ advisory: they can justify a fresh phase but never create one automatically or
 block unrelated work. The general report does not evaluate a blocking gate.
 Add `--objective-id` to gate the next wave for one objective; only its failed
 dispatches, invalid manifests, unchanged repeats, budget violations, and
-concurrent write fan-out above two make the report exit nonzero. This is an
-explicit pre-wave check, not an automatic adapter hook: the chief or caller
-must run it and stop on failure.
+concurrent write fan-out above two across all of its phases make the report
+exit nonzero. Phase rows remain diagnostic; a mistaken or incomplete rollover
+cannot hide objective-wide write concurrency. This is an explicit pre-wave
+check, not an automatic adapter hook: the chief or caller must run it and stop
+on failure.
 
 ## Privacy and security design
 
