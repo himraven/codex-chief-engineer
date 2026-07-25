@@ -249,6 +249,21 @@ def maximum_overlap(manifests: Iterable[dict[str, Any]]) -> int:
     return peak
 
 
+def run_overlaps_window(
+    manifest: dict[str, Any], start_epoch: int, end_epoch: int
+) -> bool:
+    started = safe_int(manifest.get("started_at_epoch"))
+    finished = max(safe_int(manifest.get("finished_at_epoch")), started + 1)
+    return started < end_epoch and finished > start_epoch
+
+
+def run_finished_in_window(
+    manifest: dict[str, Any], start_epoch: int, end_epoch: int
+) -> bool:
+    finished = safe_int(manifest.get("finished_at_epoch"))
+    return start_epoch <= finished < end_epoch
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -436,17 +451,26 @@ def main() -> int:
     else:
         run_home = args.codex_home / "chief-engineer-runs"
 
-    direct_run_dir = run_home / args.date
-    direct_paths = (
-        sorted(direct_run_dir.glob("*.manifest.json"))
-        if direct_run_dir.is_dir()
-        else []
-    )
-    direct_runs, direct_errors = read_manifests(direct_paths)
     all_manifest_paths = (
         sorted(run_home.glob("*/*.manifest.json")) if run_home.is_dir() else []
     )
-    all_runs, _ = read_manifests(all_manifest_paths)
+    all_runs, all_manifest_errors = read_manifests(all_manifest_paths)
+    direct_runs = [
+        run for run in all_runs if run_overlaps_window(run, start_epoch, end_epoch)
+    ]
+    direct_usage_runs = [
+        run
+        for run in direct_runs
+        if run_finished_in_window(run, start_epoch, end_epoch)
+    ]
+    direct_usage_paths = {
+        manifest_text(run, "_manifest_path", "") for run in direct_usage_runs
+    }
+    direct_errors = [
+        error
+        for error in all_manifest_errors
+        if Path(error["path"]).parent.name == args.date
+    ]
 
     fingerprints: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for run in all_runs:
@@ -466,13 +490,6 @@ def main() -> int:
         run_id = manifest_text(run, "run_id", "(direct run)")
         if run.get("observed_model") is None:
             direct_notes.add("OBSERVED_MODEL_UNAVAILABLE")
-        direct_run_model = manifest_text(run, "requested_model", "(unknown)")
-        direct_run_effort = manifest_text(run, "reasoning_effort", "-")
-        by_model[(direct_run_model, direct_run_effort)]["sessions"] += 1
-        add_usage(
-            by_model[(direct_run_model, direct_run_effort)]["usage"],
-            direct_run_usage(run),
-        )
 
         objective = manifest_text(run, "objective_id", "(untracked objective)")
         phase = manifest_text(run, "phase_id", "(untracked phase)")
@@ -509,7 +526,8 @@ def main() -> int:
         if manifest_text(run, "role", "") in WRITE_ROLES:
             phase_group["write_runs"].append(run)
         phase_group["workstreams"].add(workstream)
-        add_usage(phase_group["usage"], direct_run_usage(run))
+        if manifest_text(run, "_manifest_path", "") in direct_usage_paths:
+            add_usage(phase_group["usage"], direct_run_usage(run))
 
         fingerprint = manifest_text(run, "input_fingerprint", "")
         successful_matches = sorted(
@@ -543,11 +561,20 @@ def main() -> int:
         elif write_overlap > FANOUT_LIMIT:
             direct_notes.add("OUT_OF_SCOPE_WRITE_FANOUT_ALERT")
 
+    for run in direct_usage_runs:
+        direct_run_model = manifest_text(run, "requested_model", "(unknown)")
+        direct_run_effort = manifest_text(run, "reasoning_effort", "-")
+        by_model[(direct_run_model, direct_run_effort)]["sessions"] += 1
+        add_usage(
+            by_model[(direct_run_model, direct_run_effort)]["usage"],
+            direct_run_usage(run),
+        )
+
     total_usage = empty_usage()
     for values in by_model.values():
         add_usage(total_usage, values["usage"])
     direct_usage = empty_usage()
-    for run in direct_runs:
+    for run in direct_usage_runs:
         add_usage(direct_usage, direct_run_usage(run))
 
     print(f"# Codex usage and lifecycle report — {args.date}")
@@ -564,7 +591,8 @@ def main() -> int:
         f"(reasoning subset: {fmt_tokens(total_usage['reasoning_output_tokens'])})"
     )
     print(
-        f"Direct ephemeral runs: {len(direct_runs)} | "
+        f"Direct ephemeral completions: {len(direct_usage_runs)} | "
+        f"Overlapping runs: {len(direct_runs)} | "
         f"Tokens: {fmt_tokens(direct_usage['total_tokens'])}"
     )
 

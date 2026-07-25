@@ -51,6 +51,7 @@ class TokenReportTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.codex_home = Path(self.tempdir.name)
+        self.day_start, self.day_end = REPORT_MODULE.day_bounds("2026-07-24")
         rollout = self.codex_home / "rollout.jsonl"
         events = [
             {
@@ -159,12 +160,13 @@ class TokenReportTests(unittest.TestCase):
         *,
         run_home: Path | None = None,
         env: dict[str, str] | None = None,
+        date: str = "2026-07-24",
     ) -> subprocess.CompletedProcess[str]:
         command = [
             "python3",
             str(REPORT),
             "--date",
-            "2026-07-24",
+            date,
             "--codex-home",
             str(self.codex_home),
         ]
@@ -185,8 +187,9 @@ class TokenReportTests(unittest.TestCase):
         role: str = "worker",
         run_home: Path | None = None,
         exit_status: int = 0,
+        index_date: str = "2026-07-24",
     ) -> Path:
-        directory = (run_home or self.codex_home / "chief-engineer-runs") / "2026-07-24"
+        directory = (run_home or self.codex_home / "chief-engineer-runs") / index_date
         directory.mkdir(parents=True, exist_ok=True)
         manifest = {
             "run_id": run_id,
@@ -201,8 +204,8 @@ class TokenReportTests(unittest.TestCase):
             "exit_status": exit_status,
             "input_fingerprint": hashlib.sha256(fingerprint.encode()).hexdigest(),
             "repeat_reason": repeat_reason,
-            "started_at_epoch": started,
-            "finished_at_epoch": finished,
+            "started_at_epoch": self.day_start + started,
+            "finished_at_epoch": self.day_start + finished,
             "usage": {
                 "input_tokens": 10,
                 "cached_input_tokens": 6,
@@ -338,6 +341,34 @@ class TokenReportTests(unittest.TestCase):
         result = self.report("OBJ-1")
         self.assertEqual(result.returncode, 2)
         self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", result.stdout)
+
+    def test_cross_midnight_runs_gate_both_days_and_count_on_completion_day(
+        self,
+    ) -> None:
+        for index in range(3):
+            self.write_manifest(
+                f"cross-midnight-{index}",
+                fingerprint=f"cross-midnight-{index}",
+                started=-60,
+                finished=120,
+                index_date="2026-07-23",
+            )
+
+        previous_day = self.report("OBJ-1", date="2026-07-23")
+        self.assertEqual(previous_day.returncode, 2)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", previous_day.stdout)
+        self.assertIn(
+            "Direct ephemeral completions: 0 | Overlapping runs: 3 | Tokens: 0",
+            previous_day.stdout,
+        )
+
+        completion_day = self.report("OBJ-1")
+        self.assertEqual(completion_day.returncode, 2)
+        self.assertIn("CONCURRENT_WRITE_FANOUT>2:OBJ-1/P1", completion_day.stdout)
+        self.assertIn(
+            "Direct ephemeral completions: 3 | Overlapping runs: 3 | Tokens: 36",
+            completion_day.stdout,
+        )
 
     def test_malformed_in_scope_manifest_fails_closed(self) -> None:
         directory = self.codex_home / "chief-engineer-runs/2026-07-24"

@@ -186,6 +186,11 @@ Relative environment paths are rejected so dispatch and reporting cannot
 silently resolve different indexes. Use `--run-home` to inspect a different
 local manifest index explicitly.
 
+Direct-run gates use execution-time overlap across the full manifest index, so
+a run crossing local midnight is visible on both days. Because ephemeral JSONL
+events do not carry per-event timestamps, aggregate direct-run tokens are
+counted once on the local completion day rather than guessed or double-counted.
+
 Use `--include-titles` only when it is safe for those local titles to appear in
 your terminal output. Historical compaction and long-context signals are
 advisory: they can justify a fresh phase but never create one automatically or
