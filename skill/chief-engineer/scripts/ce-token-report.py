@@ -231,6 +231,34 @@ def read_manifests(
     return manifests, errors
 
 
+def deduplicate_manifests(
+    manifests: Iterable[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    unique: dict[str, dict[str, Any]] = {}
+    errors: list[dict[str, str]] = []
+    for manifest in manifests:
+        run_id = manifest_text(manifest, "run_id", "")
+        existing = unique.get(run_id)
+        if existing is None:
+            unique[run_id] = manifest
+            continue
+        existing_payload = {
+            key: value for key, value in existing.items() if key != "_manifest_path"
+        }
+        manifest_payload = {
+            key: value for key, value in manifest.items() if key != "_manifest_path"
+        }
+        if existing_payload != manifest_payload:
+            errors.append(
+                {
+                    "path": manifest_text(manifest, "_manifest_path", run_id),
+                    "objective_id": "",
+                    "all_dates": "true",
+                }
+            )
+    return list(unique.values()), errors
+
+
 def maximum_overlap(manifests: Iterable[dict[str, Any]]) -> int:
     events: list[tuple[int, int]] = []
     for manifest in manifests:
@@ -455,6 +483,8 @@ def main() -> int:
         sorted(run_home.glob("*/*.manifest.json")) if run_home.is_dir() else []
     )
     all_runs, all_manifest_errors = read_manifests(all_manifest_paths)
+    all_runs, duplicate_manifest_errors = deduplicate_manifests(all_runs)
+    all_manifest_errors.extend(duplicate_manifest_errors)
     direct_runs = [
         run for run in all_runs if run_overlaps_window(run, start_epoch, end_epoch)
     ]
@@ -469,7 +499,8 @@ def main() -> int:
     direct_errors = [
         error
         for error in all_manifest_errors
-        if Path(error["path"]).parent.name == args.date
+        if error.get("all_dates") == "true"
+        or Path(error["path"]).parent.name == args.date
     ]
 
     fingerprints: dict[str, list[dict[str, Any]]] = defaultdict(list)

@@ -180,6 +180,11 @@ with `--fallback`. Never retry a quality failure silently. An intentional
 unchanged repeat requires a non-blank `--repeat-reason` with the new evidence or
 question.
 
+Automatic repository fingerprints exclude ignored files. When ignored runtime
+evidence affects the task, put its digest in the reviewed brief. If it changes
+afterward, update that digest or record the new evidence with
+`--repeat-reason`; never hash whole cache, dependency, build, or secret trees.
+
 ## 7. Control concurrency and convergence
 
 - Usually keep one or two active persistent workstreams. Start at most two

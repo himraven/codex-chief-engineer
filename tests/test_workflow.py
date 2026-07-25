@@ -10,6 +10,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from shutil import copyfile
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -285,6 +286,40 @@ class TokenReportTests(unittest.TestCase):
         self.assertIn(
             "CE_RUN_HOME must resolve to an absolute path",
             result.stderr,
+        )
+
+    def test_duplicate_manifest_copy_is_counted_once(self) -> None:
+        original = self.write_manifest(
+            "duplicated-run",
+            fingerprint="duplicated",
+            started=100,
+            finished=110,
+        )
+        duplicate_dir = self.codex_home / "chief-engineer-runs/results"
+        duplicate_dir.mkdir(parents=True)
+        copyfile(original, duplicate_dir / original.name)
+
+        result = self.report("OBJ-1")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn(
+            "Direct ephemeral completions: 1 | Overlapping runs: 1 | Tokens: 12",
+            result.stdout,
+        )
+        self.assertIn("| gpt-5.6-luna / low | 1 | 12 |", result.stdout)
+
+        conflicting_copy = duplicate_dir / original.name
+        conflicting_manifest = json.loads(conflicting_copy.read_text(encoding="utf-8"))
+        conflicting_manifest["objective_id"] = "OBJ-2"
+        conflicting_manifest["usage"]["total_tokens"] = 13
+        conflicting_copy.write_text(
+            json.dumps(conflicting_manifest),
+            encoding="utf-8",
+        )
+        conflict_result = self.report("OBJ-1")
+        self.assertEqual(conflict_result.returncode, 2)
+        self.assertIn(
+            f"DIRECT_MANIFEST_INVALID:{original.name}",
+            conflict_result.stdout,
         )
 
     def test_unreadable_rollout_remains_visible_as_advisory(self) -> None:
@@ -634,6 +669,14 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 "--result-dir",
                 str(root / "results"),
             ]
+            overlapping_outputs = [*command[:-1], str(root / "run-index/results")]
+            overlapping_output = run(overlapping_outputs, env=environment)
+            self.assertEqual(overlapping_output.returncode, 68)
+            self.assertIn(
+                "Result directory and run index must not overlap",
+                overlapping_output.stderr,
+            )
+
             linked_result_command = command.copy()
             linked_result_command[linked_result_command.index("--cwd") + 1] = str(
                 linked_worktree

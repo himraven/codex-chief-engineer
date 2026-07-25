@@ -230,6 +230,20 @@ fi
 run_home=$(
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$run_home"
 )
+case "$result_dir" in
+  "$run_home"|"$run_home"/*)
+    printf 'Result directory and run index must not overlap: %s / %s\n' \
+      "$result_dir" "$run_home" >&2
+    exit 68
+    ;;
+esac
+case "$run_home" in
+  "$result_dir"|"$result_dir"/*)
+    printf 'Result directory and run index must not overlap: %s / %s\n' \
+      "$result_dir" "$run_home" >&2
+    exit 68
+    ;;
+esac
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 approved_roots_file="${CE_APPROVED_REPO_ROOTS:-$script_dir/../references/approved-repo-roots.local.txt}"
 if [[ ! -f "$approved_roots_file" ]]; then

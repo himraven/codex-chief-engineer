@@ -146,6 +146,12 @@ Final diff fingerprints stay relative to the tree captured at dispatch, even
 when an executor commits before returning. Repeating an unchanged input requires
 a non-blank `--repeat-reason` with the new evidence or question.
 
+Ignored files are deliberately outside automatic repository fingerprinting:
+hashing caches, dependencies, build output, and secrets would be expensive and
+unsafe. If an ignored artifact affects an executor decision, put its digest in
+the reviewed brief; if it changes later, update that digest or provide a
+non-blank `--repeat-reason`.
+
 The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw
 logs. If a brief contains multiple objectives, reslice it.
