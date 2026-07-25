@@ -133,12 +133,14 @@ After a human explicitly approves the write, create the
 [approval record](skill/chief-engineer/references/write-approval.md) with the
 brief SHA-256. The adapter refuses write dispatch without a matching record,
 Sol as a worker, non-Git directories, shared checkouts, roots outside the local
-allowlist, and oversized briefs. It also fingerprints the objective/workstream
-identity, brief, commit, and repository state. Deduplication intentionally
-excludes the phase ID: unchanged evidence remains unchanged after a phase
-rollover. Repository state includes tracked and untracked files plus dirty
-state inside initialized submodules. Repeating it requires `--repeat-reason`
-with the new evidence or question.
+allowlist, oversized briefs, and result directories inside the repository.
+Keeping `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME` outside the repository
+prevents adapter artifacts from becoming new evidence. The adapter also
+fingerprints the objective/workstream identity, brief, commit, and repository
+state. Deduplication intentionally excludes the phase ID: unchanged evidence
+remains unchanged after a phase rollover. Repository state includes tracked and
+untracked files plus dirty state inside initialized submodules. Repeating it
+requires `--repeat-reason` with the new evidence or question.
 
 The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw

@@ -567,6 +567,45 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 "--result-dir",
                 str(root / "results"),
             ]
+            inside_result_dir = repository / "run-artifacts"
+            inside_result_command = [*command[:-1], str(inside_result_dir)]
+            inside_result = run(inside_result_command, env=environment)
+            self.assertEqual(inside_result.returncode, 68)
+            self.assertIn(
+                "Result directory must be outside the repository",
+                inside_result.stderr,
+            )
+            self.assertFalse(inside_result_dir.exists())
+
+            result_alias = root / "result-alias"
+            result_alias.symlink_to(inside_result_dir, target_is_directory=True)
+            aliased_result_command = [*command[:-1], str(result_alias)]
+            aliased_result = run(aliased_result_command, env=environment)
+            self.assertEqual(aliased_result.returncode, 68)
+            self.assertIn(
+                "Result directory must be outside the repository",
+                aliased_result.stderr,
+            )
+            result_alias.unlink()
+
+            repository_result_command = [*command[:-1], str(repository)]
+            repository_result = run(repository_result_command, env=environment)
+            self.assertEqual(repository_result.returncode, 68)
+            self.assertIn(
+                "Result directory must be outside the repository",
+                repository_result.stderr,
+            )
+
+            inside_run_environment = environment.copy()
+            inside_run_environment["CE_RUN_HOME"] = str(repository / "run-index")
+            inside_run = run(command, env=inside_run_environment)
+            self.assertEqual(inside_run.returncode, 64)
+            self.assertIn(
+                "Run index must be outside the repository",
+                inside_run.stderr,
+            )
+            self.assertFalse((repository / "run-index").exists())
+
             relative_run_environment = environment.copy()
             relative_run_environment["CE_RUN_HOME"] = "relative-run-index"
             relative_run = run(

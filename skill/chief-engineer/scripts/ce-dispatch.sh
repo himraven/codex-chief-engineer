@@ -190,6 +190,41 @@ repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || {
   exit 69
 }
 repo_root=$(cd "$repo_root" && pwd -P)
+if ! command -v python3 >/dev/null 2>&1; then
+  printf 'python3 is required to validate artifact paths.\n' >&2
+  exit 71
+fi
+result_dir=$(
+  python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$result_dir"
+)
+case "$result_dir" in
+  "$repo_root"|"$repo_root"/*)
+    printf 'Result directory must be outside the repository: %s\n' "$result_dir" >&2
+    exit 68
+    ;;
+esac
+if [[ -n "${CODEX_HOME:-}" ]]; then
+  codex_home="$CODEX_HOME"
+elif [[ -n "${HOME:-}" ]]; then
+  codex_home="$HOME/.codex"
+else
+  printf 'Set CODEX_HOME because HOME is unavailable.\n' >&2
+  exit 71
+fi
+run_home="${CE_RUN_HOME:-$codex_home/chief-engineer-runs}"
+if [[ "$run_home" != /* ]]; then
+  printf 'CE_RUN_HOME (or CODEX_HOME) must resolve to an absolute path: %s\n' "$run_home" >&2
+  exit 64
+fi
+run_home=$(
+  python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$run_home"
+)
+case "$run_home" in
+  "$repo_root"|"$repo_root"/*)
+    printf 'Run index must be outside the repository: %s\n' "$run_home" >&2
+    exit 64
+    ;;
+esac
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 approved_roots_file="${CE_APPROVED_REPO_ROOTS:-$script_dir/../references/approved-repo-roots.local.txt}"
 if [[ ! -f "$approved_roots_file" ]]; then
@@ -240,15 +275,6 @@ if [[ "$sandbox" == "workspace-write" ]]; then
   trap cleanup_write_lock EXIT
 fi
 
-if [[ -n "${CODEX_HOME:-}" ]]; then
-  codex_home="$CODEX_HOME"
-elif [[ -n "${HOME:-}" ]]; then
-  codex_home="$HOME/.codex"
-else
-  printf 'Set CODEX_HOME because HOME is unavailable.\n' >&2
-  exit 71
-fi
-
 mkdir -p "$result_dir"
 result_dir=$(cd "$result_dir" && pwd -P)
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -261,11 +287,6 @@ run_id="${stamp}-${role}-${suffix}"
 events="$result_dir/${run_id}.events.jsonl"
 final="$result_dir/${run_id}.final.md"
 manifest="$result_dir/${run_id}.manifest.json"
-run_home="${CE_RUN_HOME:-$codex_home/chief-engineer-runs}"
-if [[ "$run_home" != /* ]]; then
-  printf 'CE_RUN_HOME (or CODEX_HOME) must resolve to an absolute path: %s\n' "$run_home" >&2
-  exit 64
-fi
 index_dir="$run_home/$(date +%F)"
 index_manifest="$index_dir/${run_id}.manifest.json"
 mkdir -p "$index_dir"

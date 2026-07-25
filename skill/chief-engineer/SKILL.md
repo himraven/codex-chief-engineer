@@ -157,9 +157,11 @@ model, reasoning effort, sandbox, and fresh-context behavior. Otherwise use
 with only the standalone brief.
 
 The adapter rejects Sol workers, broad or unapproved Git roots, oversized
-briefs, unchanged successful repeats, and unsafe write locations. Write roles
-also require a brief-bound approval record and a dedicated linked worktree
-beneath the allowlisted root.
+briefs, unchanged successful repeats, repository-local result directories, and
+unsafe write locations. Keep `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME`
+outside the repository so adapter artifacts cannot become new evidence. Write
+roles also require a brief-bound approval record and a dedicated linked
+worktree beneath the allowlisted root.
 
 ```bash
 CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
