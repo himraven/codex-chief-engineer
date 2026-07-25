@@ -225,7 +225,7 @@ if [[ "$sandbox" == "workspace-write" ]]; then
     printf 'Write worktree is busy: %s\n' "$repo_root" >&2
     exit 72
   fi
-  # shellcheck disable=SC2329 # Invoked indirectly by the EXIT trap.
+  # shellcheck disable=SC2317,SC2329 # Invoked indirectly by the EXIT trap.
   cleanup_write_lock() { rmdir "$write_lock_dir" 2>/dev/null || true; }
   trap cleanup_write_lock EXIT
 fi
