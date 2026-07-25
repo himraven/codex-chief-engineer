@@ -250,6 +250,7 @@ class TokenReportTests(unittest.TestCase):
         result = self.report("OBJ-1", env=environment)
         self.assertEqual(result.returncode, 2)
         self.assertIn("DIRECT_RUN_FAILED:failed-run", result.stdout)
+        self.assertIn("| gpt-5.6-luna / low | 1 | 12 |", result.stdout)
 
         explicit_run_home = self.codex_home / "explicit-run-index"
         override_result = self.report(
@@ -438,8 +439,10 @@ class DispatchTests(unittest.TestCase):
                 check=True,
             )
             (repository / "README.md").write_text("fixture\n", encoding="utf-8")
+            (repository / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
             subprocess.run(
-                ["git", "-C", str(repository), "add", "README.md"], check=True
+                ["git", "-C", str(repository), "add", "README.md", ".gitignore"],
+                check=True,
             )
             subprocess.run(
                 ["git", "-C", str(repository), "commit", "-qm", "test fixture"],
@@ -505,6 +508,21 @@ class DispatchTests(unittest.TestCase):
                 ["git", "-C", str(repository), "commit", "-qam", "add submodule"],
                 check=True,
             )
+            linked_worktree = repository / ".worktrees/scout"
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repository),
+                    "worktree",
+                    "add",
+                    "-q",
+                    "-b",
+                    "test-scout",
+                    str(linked_worktree),
+                ],
+                check=True,
+            )
             scratch = repository / "scratch.txt"
             scratch.write_text("untracked v1\n", encoding="utf-8")
             outside_link = repository / "outside-link"
@@ -567,6 +585,29 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 "--result-dir",
                 str(root / "results"),
             ]
+            linked_result_command = command.copy()
+            linked_result_command[linked_result_command.index("--cwd") + 1] = str(
+                linked_worktree
+            )
+            linked_result_command[-1] = str(repository / "linked-results")
+            linked_result = run(linked_result_command, env=environment)
+            self.assertEqual(linked_result.returncode, 68)
+            self.assertIn(
+                "Result directory must be outside the repository",
+                linked_result.stderr,
+            )
+
+            linked_run_environment = environment.copy()
+            linked_run_environment["CE_RUN_HOME"] = str(repository / "linked-run-index")
+            linked_run_command = linked_result_command.copy()
+            linked_run_command[-1] = str(root / "linked-results")
+            linked_run = run(linked_run_command, env=linked_run_environment)
+            self.assertEqual(linked_run.returncode, 64)
+            self.assertIn(
+                "Run index must be outside the repository",
+                linked_run.stderr,
+            )
+
             inside_result_dir = repository / "run-artifacts"
             inside_result_command = [*command[:-1], str(inside_result_dir)]
             inside_result = run(inside_result_command, env=environment)

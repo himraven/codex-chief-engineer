@@ -466,6 +466,13 @@ def main() -> int:
         run_id = manifest_text(run, "run_id", "(direct run)")
         if run.get("observed_model") is None:
             direct_notes.add("OBSERVED_MODEL_UNAVAILABLE")
+        direct_run_model = manifest_text(run, "requested_model", "(unknown)")
+        direct_run_effort = manifest_text(run, "reasoning_effort", "-")
+        by_model[(direct_run_model, direct_run_effort)]["sessions"] += 1
+        add_usage(
+            by_model[(direct_run_model, direct_run_effort)]["usage"],
+            direct_run_usage(run),
+        )
 
         objective = manifest_text(run, "objective_id", "(untracked objective)")
         phase = manifest_text(run, "phase_id", "(untracked phase)")
@@ -563,7 +570,7 @@ def main() -> int:
 
     print("\n## By model\n")
     print(
-        "| Model / effort | Tasks | Total | Input | Cached | Uncached | Output | Reasoning* |"
+        "| Model / effort | Tasks / runs | Total | Input | Cached | Uncached | Output | Reasoning* |"
     )
     print("|---|---:|---:|---:|---:|---:|---:|---:|")
     ranked_models = sorted(

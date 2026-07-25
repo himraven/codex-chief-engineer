@@ -197,12 +197,6 @@ fi
 result_dir=$(
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$result_dir"
 )
-case "$result_dir" in
-  "$repo_root"|"$repo_root"/*)
-    printf 'Result directory must be outside the repository: %s\n' "$result_dir" >&2
-    exit 68
-    ;;
-esac
 if [[ -n "${CODEX_HOME:-}" ]]; then
   codex_home="$CODEX_HOME"
 elif [[ -n "${HOME:-}" ]]; then
@@ -219,12 +213,6 @@ fi
 run_home=$(
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$run_home"
 )
-case "$run_home" in
-  "$repo_root"|"$repo_root"/*)
-    printf 'Run index must be outside the repository: %s\n' "$run_home" >&2
-    exit 64
-    ;;
-esac
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 approved_roots_file="${CE_APPROVED_REPO_ROOTS:-$script_dir/../references/approved-repo-roots.local.txt}"
 if [[ ! -f "$approved_roots_file" ]]; then
@@ -246,6 +234,18 @@ if [[ "$approved_root" != true ]]; then
   printf 'Refusing unapproved repository root: %s\n' "$repo_root" >&2
   exit 70
 fi
+case "$result_dir" in
+  "$allowed_root"|"$allowed_root"/*)
+    printf 'Result directory must be outside the repository: %s\n' "$result_dir" >&2
+    exit 68
+    ;;
+esac
+case "$run_home" in
+  "$allowed_root"|"$allowed_root"/*)
+    printf 'Run index must be outside the repository: %s\n' "$run_home" >&2
+    exit 64
+    ;;
+esac
 
 head_sha=$(git -C "$repo_root" rev-parse --verify HEAD 2>/dev/null || printf 'UNBORN')
 initial_repo_fingerprint=$(repo_fingerprint "$repo_root")
