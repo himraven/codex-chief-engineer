@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.11"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+          python -m pip install ruff==0.15.10
+
+      - name: Verify
+        run: |
+          bash -n install.sh skill/chief-engineer/scripts/ce-dispatch.sh
+          shellcheck install.sh skill/chief-engineer/scripts/ce-dispatch.sh
+          ruff check skill/chief-engineer/scripts/ce-token-report.py tests
+          ruff format --check skill/chief-engineer/scripts/ce-token-report.py tests
+          python -m unittest -v
+
+      - name: Check installer plan
+        run: |
+          CE_TEST_ROOT=$(mktemp -d)
+          CODEX_HOME="$CE_TEST_ROOT/codex" ./install.sh --dry-run

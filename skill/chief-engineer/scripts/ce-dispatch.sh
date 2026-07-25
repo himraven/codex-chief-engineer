@@ -5,50 +5,116 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage: ce-dispatch.sh --role <scout|mechanic|worker|senior|reviewer> \
+  --objective-id <id> --phase-id <id> --workstream-id <id> \
   --cwd <git-repository> --brief <brief.md> --result-dir <directory> \
-  [--approval-file <approval.md>] [--fallback]
+  [--approval-file <approval.md>] [--fallback] [--repeat-reason <reason>]
 
 The launcher refuses Sol workers, broad or unapproved working directories, and
-oversized briefs. It runs an isolated `codex exec --ephemeral` process with a
-pinned model, reasoning effort, and sandbox.
+oversized briefs. It also refuses a previously successful unchanged input
+unless the caller records why new evidence requires a repeat. It runs an
+isolated `codex exec --ephemeral` process with a pinned model, reasoning effort,
+and sandbox.
 USAGE
 }
 
-sha256_file() {
+sha256_stream() {
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
+    shasum -a 256 | awk '{print $1}'
   elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
+    sha256sum | awk '{print $1}'
   else
     printf 'Missing SHA-256 utility: install shasum or sha256sum.\n' >&2
     return 1
   fi
 }
 
+sha256_file() {
+  sha256_stream < "$1"
+}
+
+git_base_tree() {
+  local repository="$1"
+  git -C "$repository" rev-parse --verify HEAD 2>/dev/null ||
+    git -C "$repository" hash-object -t tree /dev/null
+}
+
+worktree_fingerprint() {
+  local repository="$1"
+  local max_untracked_bytes="${CE_MAX_UNTRACKED_FINGERPRINT_BYTES:-67108864}"
+  if [[ ! "$max_untracked_bytes" =~ ^[0-9]+$ ]]; then
+    printf 'CE_MAX_UNTRACKED_FINGERPRINT_BYTES must be a non-negative integer.\n' >&2
+    return 1
+  fi
+  {
+    git -C "$repository" status --porcelain=v1
+    git -C "$repository" diff --binary "$(git_base_tree "$repository")"
+    while IFS= read -r -d '' untracked_path; do
+      printf 'untracked:%s\n' "$untracked_path"
+      untracked_file="$repository/$untracked_path"
+      if [[ -L "$untracked_file" ]]; then
+        printf 'symlink-target:%s\n' "$(readlink "$untracked_file")"
+      elif [[ -f "$untracked_file" ]]; then
+        untracked_bytes=$(wc -c < "$untracked_file" | tr -d '[:space:]')
+        if (( untracked_bytes > max_untracked_bytes )); then
+          printf 'Refusing to fingerprint oversized untracked file (%s > %s bytes): %s\n' \
+            "$untracked_bytes" "$max_untracked_bytes" "$untracked_path" >&2
+          return 1
+        fi
+        sha256_file "$untracked_file"
+      else
+        printf 'Refusing to fingerprint untracked special file: %s\n' "$untracked_path" >&2
+        return 1
+      fi
+    done < <(git -C "$repository" ls-files --others --exclude-standard -z)
+  } | sha256_stream
+}
+
+repo_fingerprint() {
+  local repository="$1"
+  {
+    git_base_tree "$repository"
+    worktree_fingerprint "$repository"
+  } | sha256_stream
+}
+
 role=""
+objective_id=""
+phase_id=""
+workstream_id=""
 cwd=""
 brief=""
 result_dir=""
 approval_file=""
+repeat_reason=""
 fallback=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --role) role="${2:-}"; shift 2 ;;
+    --objective-id) objective_id="${2:-}"; shift 2 ;;
+    --phase-id) phase_id="${2:-}"; shift 2 ;;
+    --workstream-id) workstream_id="${2:-}"; shift 2 ;;
     --cwd) cwd="${2:-}"; shift 2 ;;
     --brief) brief="${2:-}"; shift 2 ;;
     --result-dir) result_dir="${2:-}"; shift 2 ;;
     --approval-file) approval_file="${2:-}"; shift 2 ;;
+    --repeat-reason) repeat_reason="${2:-}"; shift 2 ;;
     --fallback) fallback=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 64 ;;
   esac
 done
 
-if [[ -z "$role" || -z "$cwd" || -z "$brief" || -z "$result_dir" ]]; then
+if [[ -z "$role" || -z "$objective_id" || -z "$phase_id" || -z "$workstream_id" || -z "$cwd" || -z "$brief" || -z "$result_dir" ]]; then
   usage >&2
   exit 64
 fi
+for lifecycle_id in "$objective_id" "$phase_id" "$workstream_id"; do
+  if [[ ! "$lifecycle_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
+    printf 'Lifecycle IDs must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}: %q\n' "$lifecycle_id" >&2
+    exit 64
+  fi
+done
 
 case "$role" in
   scout)
@@ -136,6 +202,13 @@ if [[ "$approved_root" != true ]]; then
   exit 70
 fi
 
+head_sha=$(git -C "$repo_root" rev-parse --verify HEAD 2>/dev/null || printf 'UNBORN')
+initial_repo_fingerprint=$(repo_fingerprint "$repo_root")
+input_fingerprint=$(
+  printf '%s\n' "$objective_id" "$workstream_id" "$role" "$brief_sha" "$head_sha" "$initial_repo_fingerprint" |
+    sha256_stream
+)
+
 write_lock_dir=""
 if [[ "$sandbox" == "workspace-write" ]]; then
   if [[ ! -f "$repo_root/.git" || "$repo_root" != "$allowed_root/.worktrees/"* ]]; then
@@ -152,6 +225,7 @@ if [[ "$sandbox" == "workspace-write" ]]; then
     printf 'Write worktree is busy: %s\n' "$repo_root" >&2
     exit 72
   fi
+  # shellcheck disable=SC2329 # Invoked indirectly by the EXIT trap.
   cleanup_write_lock() { rmdir "$write_lock_dir" 2>/dev/null || true; }
   trap cleanup_write_lock EXIT
 fi
@@ -182,6 +256,23 @@ index_dir="$run_home/$(date +%F)"
 index_manifest="$index_dir/${run_id}.manifest.json"
 mkdir -p "$index_dir"
 
+duplicate_manifest=""
+if [[ -d "$run_home" ]]; then
+  while IFS= read -r prior_manifest; do
+    if jq -e --arg fingerprint "$input_fingerprint" \
+      '(.input_fingerprint == $fingerprint) and (.exit_status == 0)' \
+      "$prior_manifest" >/dev/null 2>&1; then
+      duplicate_manifest="$prior_manifest"
+      break
+    fi
+  done < <(find "$run_home" -mindepth 2 -maxdepth 2 -type f -name '*.manifest.json' -print)
+fi
+if [[ -n "$duplicate_manifest" && -z "$repeat_reason" ]]; then
+  printf 'Refusing unchanged successful repeat. Prior manifest: %s\n' "$duplicate_manifest" >&2
+  printf 'Change the brief or repository evidence, or pass --repeat-reason with the new question/evidence.\n' >&2
+  exit 74
+fi
+
 start_epoch=$(date +%s)
 set +e
 {
@@ -205,6 +296,18 @@ set +e
 status=$?
 set -e
 end_epoch=$(date +%s)
+fingerprint_state="complete"
+set +e
+final_repo_fingerprint=$(repo_fingerprint "$repo_root")
+final_repo_fingerprint_status=$?
+final_diff_sha256=$(worktree_fingerprint "$repo_root")
+final_diff_fingerprint_status=$?
+set -e
+if (( final_repo_fingerprint_status != 0 || final_diff_fingerprint_status != 0 )); then
+  fingerprint_state="post_run_fingerprint_failed"
+  final_repo_fingerprint=""
+  final_diff_sha256=""
+fi
 
 observed_model=$(jq -r '[.model?, .payload.model?, .payload.thread_settings.model?] | .[]? | select(type == "string" and length > 0)' "$events" 2>/dev/null | head -1 || true)
 if [[ -z "${observed_model:-}" ]]; then
@@ -216,7 +319,7 @@ else
 fi
 
 usage=$(jq -s '[.[] | select(.type == "turn.completed") | (.usage // {})] | last // {}' "$events" 2>/dev/null || printf '{}')
-tool_calls=$(jq -s '[.[] | select(.type == "item.started" and .item.type == "command_execution")] | length' "$events" 2>/dev/null || printf '0')
+tool_calls=$(jq -s '[.[] | select(.type == "item.started" and (.item.type == "command_execution" or .item.type == "mcp_tool_call" or .item.type == "web_search"))] | length' "$events" 2>/dev/null || printf '0')
 final_bytes=0
 if [[ -f "$final" ]]; then
   final_bytes=$(wc -c < "$final" | tr -d '[:space:]')
@@ -229,13 +332,21 @@ if (( tool_calls > tool_budget )); then
 elif (( final_bytes > final_budget_bytes )); then
   budget_state="final_output_byte_ceiling_exceeded"
   gate_status=73
+elif [[ "$fingerprint_state" != "complete" ]]; then
+  gate_status=75
 fi
 
 jq -n \
-  --arg run_id "$run_id" --arg role "$role" --arg requested_model "$model" \
+  --arg run_id "$run_id" --arg objective_id "$objective_id" --arg phase_id "$phase_id" \
+  --arg workstream_id "$workstream_id" --arg role "$role" --arg requested_model "$model" \
   --arg routing_mode "$([[ "$fallback" == true ]] && printf fallback || printf primary)" \
   --arg effort "$effort" --arg sandbox "$sandbox" --arg cwd "$cwd" \
   --arg repo_root "$repo_root" --arg brief "$brief" --arg brief_sha256 "$brief_sha" \
+  --arg head_sha "$head_sha" --arg initial_repo_fingerprint "$initial_repo_fingerprint" \
+  --arg input_fingerprint "$input_fingerprint" --arg final_repo_fingerprint "$final_repo_fingerprint" \
+  --arg final_diff_sha256 "$final_diff_sha256" --arg fingerprint_state "$fingerprint_state" \
+  --arg repeat_reason "$repeat_reason" \
+  --arg duplicate_manifest "$duplicate_manifest" \
   --arg events "$events" --arg final "$final" --arg index_manifest "$index_manifest" \
   --arg approval_file "$approval_file" --arg approval_sha256 "$approval_sha" --arg approved_by "$approved_by" \
   --arg model_provenance "$model_provenance" --argjson observed_model "$observed_model" \
@@ -244,9 +355,28 @@ jq -n \
   --argjson tool_budget "$tool_budget" --argjson actual_tool_calls "$tool_calls" \
   --argjson final_budget_bytes "$final_budget_bytes" --argjson final_bytes "$final_bytes" \
   --arg budget_state "$budget_state" \
-  '{run_id: $run_id, role: $role, requested_model: $requested_model, routing_mode: $routing_mode, observed_model: $observed_model, reasoning_effort: $effort, sandbox: $sandbox, cwd: $cwd, repo_root: $repo_root, brief: $brief, brief_sha256: $brief_sha256, approval_file: $approval_file, approval_sha256: $approval_sha256, approved_by: $approved_by, event_log: $events, final_message: $final, index_manifest: $index_manifest, model_provenance: $model_provenance, usage: $usage, codex_exit_status: $status, exit_status: $gate_status, started_at_epoch: $started_at, finished_at_epoch: $finished_at, tool_budget: $tool_budget, actual_tool_calls: $actual_tool_calls, final_output_budget_bytes: $final_budget_bytes, final_output_bytes: $final_bytes, budget_state: $budget_state}' > "$manifest"
+  '{run_id: $run_id, objective_id: $objective_id, phase_id: $phase_id,
+    workstream_id: $workstream_id, role: $role,
+    requested_model: $requested_model, routing_mode: $routing_mode,
+    observed_model: $observed_model, reasoning_effort: $effort,
+    sandbox: $sandbox, cwd: $cwd, repo_root: $repo_root,
+    brief: $brief, brief_sha256: $brief_sha256, head_sha: $head_sha,
+    initial_repo_fingerprint: $initial_repo_fingerprint,
+    input_fingerprint: $input_fingerprint,
+    final_repo_fingerprint: $final_repo_fingerprint,
+    final_diff_sha256: $final_diff_sha256,
+    fingerprint_state: $fingerprint_state,
+    repeat_reason: $repeat_reason, duplicate_manifest: $duplicate_manifest,
+    approval_file: $approval_file, approval_sha256: $approval_sha256,
+    approved_by: $approved_by, event_log: $events, final_message: $final,
+    index_manifest: $index_manifest, model_provenance: $model_provenance,
+    usage: $usage, codex_exit_status: $status, exit_status: $gate_status,
+    started_at_epoch: $started_at, finished_at_epoch: $finished_at,
+    tool_budget: $tool_budget, actual_tool_calls: $actual_tool_calls,
+    final_output_budget_bytes: $final_budget_bytes,
+    final_output_bytes: $final_bytes, budget_state: $budget_state}' > "$manifest"
 cp -p "$manifest" "$index_manifest"
 
-printf 'run_id=%s\nmanifest=%s\nindex_manifest=%s\nfinal=%s\nevents=%s\nrequested_model=%s\nobserved_model=%s\ncodex_exit_status=%s\nbudget_state=%s\nexit_status=%s\n' \
-  "$run_id" "$manifest" "$index_manifest" "$final" "$events" "$model" "${observed_model}" "$status" "$budget_state" "$gate_status"
+printf 'run_id=%s\nmanifest=%s\nindex_manifest=%s\nfinal=%s\nevents=%s\nrequested_model=%s\nobserved_model=%s\ncodex_exit_status=%s\nbudget_state=%s\nfingerprint_state=%s\nexit_status=%s\n' \
+  "$run_id" "$manifest" "$index_manifest" "$final" "$events" "$model" "${observed_model}" "$status" "$budget_state" "$fingerprint_state" "$gate_status"
 exit "$gate_status"
