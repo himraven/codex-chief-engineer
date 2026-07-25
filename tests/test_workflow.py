@@ -470,10 +470,8 @@ class DispatchTests(unittest.TestCase):
                 check=True,
             )
             (repository / "README.md").write_text("fixture\n", encoding="utf-8")
-            (repository / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
             subprocess.run(
-                ["git", "-C", str(repository), "add", "README.md", ".gitignore"],
-                check=True,
+                ["git", "-C", str(repository), "add", "README.md"], check=True
             )
             subprocess.run(
                 ["git", "-C", str(repository), "commit", "-qm", "test fixture"],
@@ -581,6 +579,12 @@ done
 cat >/dev/null
 if [[ -n "${FAKE_CODEX_UNTRACKED_FILE:-}" ]]; then
   printf 'generated artifact\\n' > "$cwd/$FAKE_CODEX_UNTRACKED_FILE"
+fi
+if [[ -n "${FAKE_CODEX_COMMIT_CONTENT:-}" ]]; then
+  printf '%s\\n' "$FAKE_CODEX_COMMIT_CONTENT" > "$cwd/committed.txt"
+  git -C "$cwd" add committed.txt
+  git -C "$cwd" -c user.email=test@example.com -c user.name=Test \
+    commit -qm "executor fixture"
 fi
 printf 'fixture result\\n' > "$output"
 printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_input_tokens":6,"output_tokens":2,"reasoning_output_tokens":1,"total_tokens":12}}'
@@ -722,6 +726,40 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
                 [*command, "--repeat-reason", "new runtime evidence"], env=environment
             )
             self.assertEqual(justified.returncode, 0, justified.stderr)
+
+            first_commit_environment = environment.copy()
+            first_commit_environment["FAKE_CODEX_COMMIT_CONTENT"] = "commit v1"
+            first_commit = run(
+                [*command, "--repeat-reason", "commit fixture"],
+                env=first_commit_environment,
+            )
+            self.assertEqual(first_commit.returncode, 0, first_commit.stderr)
+            first_commit_manifest = Path(
+                next(
+                    line.split("=", 1)[1]
+                    for line in first_commit.stdout.splitlines()
+                    if line.startswith("manifest=")
+                )
+            )
+            first_commit_diff = json.loads(
+                first_commit_manifest.read_text(encoding="utf-8")
+            )["final_diff_sha256"]
+
+            second_commit_environment = environment.copy()
+            second_commit_environment["FAKE_CODEX_COMMIT_CONTENT"] = "commit v2"
+            second_commit = run(command, env=second_commit_environment)
+            self.assertEqual(second_commit.returncode, 0, second_commit.stderr)
+            second_commit_manifest = Path(
+                next(
+                    line.split("=", 1)[1]
+                    for line in second_commit.stdout.splitlines()
+                    if line.startswith("manifest=")
+                )
+            )
+            second_commit_diff = json.loads(
+                second_commit_manifest.read_text(encoding="utf-8")
+            )["final_diff_sha256"]
+            self.assertNotEqual(first_commit_diff, second_commit_diff)
 
             submodule_file = repository / "modules/evidence/evidence.txt"
             submodule_file.write_text("dirty v1\n", encoding="utf-8")

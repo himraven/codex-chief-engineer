@@ -40,15 +40,19 @@ git_base_tree() {
 
 worktree_fingerprint() {
   local repository="$1"
+  local base_tree="${2:-}"
   local max_untracked_bytes="${CE_MAX_UNTRACKED_FINGERPRINT_BYTES:-67108864}"
   local submodule_path submodule_root untracked_path untracked_file untracked_bytes
   if [[ ! "$max_untracked_bytes" =~ ^[0-9]+$ ]]; then
     printf 'CE_MAX_UNTRACKED_FINGERPRINT_BYTES must be a non-negative integer.\n' >&2
     return 1
   fi
+  if [[ -z "$base_tree" ]]; then
+    base_tree=$(git_base_tree "$repository")
+  fi
   {
-    git -C "$repository" status --porcelain=v1
-    git -C "$repository" diff --binary "$(git_base_tree "$repository")"
+    git -C "$repository" status --porcelain=v1 --untracked-files=no
+    git -C "$repository" diff --binary "$base_tree"
     while IFS= read -r -d '' untracked_path; do
       printf 'untracked:%s\n' "$untracked_path"
       untracked_file="$repository/$untracked_path"
@@ -66,7 +70,10 @@ worktree_fingerprint() {
         printf 'Refusing to fingerprint untracked special file: %s\n' "$untracked_path" >&2
         return 1
       fi
-    done < <(git -C "$repository" ls-files --others --exclude-standard -z)
+    done < <(
+      git -C "$repository" ls-files --others --exclude-standard \
+        --exclude='/.worktrees/' -z
+    )
     while IFS= read -r -d '' submodule_path; do
       submodule_root="$repository/$submodule_path"
       printf 'submodule:%s\n' "$submodule_path"
@@ -248,6 +255,7 @@ case "$run_home" in
 esac
 
 head_sha=$(git -C "$repo_root" rev-parse --verify HEAD 2>/dev/null || printf 'UNBORN')
+initial_base_tree=$(git_base_tree "$repo_root")
 initial_repo_fingerprint=$(repo_fingerprint "$repo_root")
 input_fingerprint=$(
   printf '%s\n' "$objective_id" "$workstream_id" "$role" "$brief_sha" "$head_sha" "$initial_repo_fingerprint" |
@@ -335,7 +343,7 @@ fingerprint_state="complete"
 set +e
 final_repo_fingerprint=$(repo_fingerprint "$repo_root")
 final_repo_fingerprint_status=$?
-final_diff_sha256=$(worktree_fingerprint "$repo_root")
+final_diff_sha256=$(worktree_fingerprint "$repo_root" "$initial_base_tree")
 final_diff_fingerprint_status=$?
 set -e
 if (( final_repo_fingerprint_status != 0 || final_diff_fingerprint_status != 0 )); then

@@ -139,8 +139,12 @@ prevents adapter artifacts from becoming new evidence. The adapter also
 fingerprints the objective/workstream identity, brief, commit, and repository
 state. Deduplication intentionally excludes the phase ID: unchanged evidence
 remains unchanged after a phase rollover. Repository state includes tracked and
-untracked files plus dirty state inside initialized submodules. Repeating it
-requires `--repeat-reason` with the new evidence or question.
+untracked files plus dirty state inside initialized submodules. The operational
+`.worktrees/` container is excluded from the primary checkout's untracked
+evidence; each linked worktree is fingerprinted when it is the dispatch target.
+Final diff fingerprints stay relative to the tree captured at dispatch, even
+when an executor commits before returning. Repeating an unchanged input requires
+`--repeat-reason` with the new evidence or question.
 
 The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw
