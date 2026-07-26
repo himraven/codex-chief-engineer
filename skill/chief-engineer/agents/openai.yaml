@@ -1,4 +1,4 @@
 interface:
   display_name: "Chief Engineer"
-  short_description: "Cost-aware routing for complex engineering work"
-  default_prompt: "Use $chief-engineer to design, route, verify, and integrate this engineering task."
+  short_description: "Quality-preserving lifecycle orchestration"
+  default_prompt: "Use $chief-engineer to design, phase, route, verify, and converge this engineering objective."

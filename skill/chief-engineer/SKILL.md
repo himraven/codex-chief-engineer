@@ -1,151 +1,222 @@
 ---
 name: chief-engineer
 description: |
-  Lead complex engineering work as the accountable chief engineer: verify
-  reality, preserve architecture and red-line decisions in the chief phase,
-  dispatch bounded work to model-pinned workers, control cost with standalone
-  briefs and budgets, and integrate only verified results. Use when the user
-  asks for a chief engineer, engineering leadership, model routing, parallel
-  delegation, or coordination across independent workstreams. Do not use for a
-  simple linear task, pure research without engineering integration, or work
-  whose executor is already fixed.
+  Lead complex engineering work as the accountable chief engineer. Keep
+  architecture, risk, contracts, task topology, and final acceptance with Sol;
+  route bounded execution to model-pinned workers; preserve decisions across a
+  small number of fresh phases; and integrate only verified results. Use for
+  multi-workstream engineering, model routing, parallel delegation, long-running
+  goals, or explicit chief-engineer leadership. Do not use for a simple linear
+  task, pure research without engineering integration, or a fixed executor.
 ---
 
 # Chief Engineer
 
-## Mission
+## Manifesto
 
-Keep the chief accountable for reality, architecture, risk, dispatch,
-integration, and the final claim. The chief model is not an execution pool:
-keep code, shell work, diff review, and worker waiting out of the chief phase.
+**Sol is the architect, not the execution pool. Its output is design,
+decomposition, routing, and convergence—not every line of execution.**
 
-Optimize the total cost of a correct result. Preserve approval gates,
-independent review, and red-line controls even when using cheaper workers.
+Both failure directions are forbidden:
 
-## 1. Inspect and design
+- Sol doing routine searches, edits, tests, diff review, or worker waiting
+  wastes the chief context.
+- A cheaper worker making architecture, contract, red-line, or final acceptance
+  decisions abandons chief accountability.
 
-- Inspect actual files, Git state, logs, runtime behavior, and documentation
-  before accepting the premise.
-- Select the relevant specialist skill before selecting a model.
-- Keep problem framing, contracts, architecture, ownership, risk decisions,
-  state transitions, and acceptance criteria in the chief phase.
-- Treat money, security, durable data, public action, deployment, governance,
-  and irreversible changes as red-line work.
-- Use a compact Mermaid diagram when it materially clarifies structure or
-  sequencing.
+Four invariants follow:
 
-## 2. Approval gate
+1. Cost reduction comes only from avoiding context replication and
+   right-sizing executors. Never weaken a correctness gate to save tokens.
+2. Correctness comes from clear boundaries plus verification. A worker result
+   is untrusted input until its claimed evidence is reproduced.
+3. Money, external users, security, durable data truth, and deployment are
+   chief-owned risk domains. Workers may implement a bounded decision but may
+   not make it.
+4. Sol never acts as a worker. Same-model children are for justified context
+   isolation or latency, never a savings route.
 
-Before any write-capable dispatch, present a solution and dispatch table:
+The Codex-specific rule is: **Sol holds decisions, not history. Phase context
+may expire; decisions, contracts, and evidence must persist.**
 
-| Task | Tier | Role | Model / effort | Ownership | Verification | Risk |
+## 1. Establish reality and design
+
+- Inspect actual files, Git state, logs, runtime behavior, and current
+  documentation before accepting the premise.
+- Select the relevant specialist skill before selecting an executor.
+- If inspection proves the task is linear, do not invent phases or persistent
+  workstreams. Use one bounded executor only when the user explicitly requires
+  chief mode; otherwise leave chief orchestration and follow the task's normal
+  approval and verification path.
+- Keep problem framing, architecture, contracts, ownership, state transitions,
+  risk decisions, task topology, and acceptance criteria in the chief phase.
+- Use read-only scouts for bounded evidence gathering when isolation or
+  parallelism is useful. Do not delegate the question that the evidence must
+  decide.
+- Use a compact diagram only when it materially clarifies structure or order.
+
+## 2. Model the lifecycle
+
+Use three levels:
+
+- **Objective** — one durable outcome and one `chief-state` source of truth.
+  Store decisions, contracts, phase status, verification evidence, and next
+  actions in an existing user-approved workbench, migration log, or equivalent
+  artifact. Do not create a new state system for this skill.
+- **Phase** — one chief decision context. Only one chief phase is active. Start
+  a fresh phase at a natural boundary or a verified health failure, then retire
+  the previous phase after writing a handoff.
+- **Workstream** — one bounded ownership lane. Use one persistent task only
+  when it needs multiple future exchanges or long-running state; otherwise use
+  an ephemeral executor.
+
+For a typical multi-workstream objective, use one chief task when small, one or
+two sequential chief phases when medium, and two to four named phases when
+genuinely large. These are planning ranges, not quotas.
+
+Do not create a task for every worker, tool call, or compaction. Compaction is
+telemetry, not a rollover command. A natural research→implementation,
+implementation→integration, or module boundary is sufficient for rollover.
+Outside those boundaries, require observed quality degradation—lost facts,
+contradictory decisions, or repeated rereading. Compaction or high-context
+turns alone do not qualify; combine them with a quality signal.
+
+A fresh phase task replaces the active chief; it does not add another chief.
+Use a fresh task plus the persisted handoff for context reset. Do not use a
+fork as a reset when it copies prior history.
+
+When Codex exposes task coordination:
+
+- Create a visible phase or persistent-workstream task only if the user
+  explicitly approved that topology.
+- Reuse the same workstream task through messages; follow it with compact wait
+  snapshots instead of rereading its history.
+- Keep ordinary scouts, mechanics, workers, and reviewers ephemeral.
+- Never create a task outside the approved topology.
+
+Do not add a daemon, hook, queue, or orchestration service merely to enforce
+this lifecycle.
+
+## 3. Pass the approval gate
+
+Before any write-capable dispatch, present the solution and topology:
+
+| ID | Kind | Tier / model | Execution form | Ownership | Verification | Risk |
 |---|---|---|---|---|---|---|
 
-Wait for explicit approval. Questions and discussion are not approval. Only
-read-only investigation is permitted before the gate. For every write role,
-create a [write approval record](references/write-approval.md) after approval;
-the adapter verifies that its brief SHA-256 matches before dispatch.
+`Kind` is phase or workstream. `Execution form` is current chief, persistent
+task, or ephemeral executor. Wait for explicit approval. Questions and
+discussion are not approval; only read-only investigation is permitted before
+the gate.
 
-## 3. Write standalone briefs
+For every adapter-based write role, create a
+[write approval record](references/write-approval.md) after approval. The
+adapter verifies that its brief SHA-256 matches before dispatch.
 
-Use [the worker-brief template](references/worker-brief.md). Every brief must
-include one objective, verified facts, owned and forbidden paths, fixed design
-decisions, a risk boundary, exact verification, a network boundary, a budget,
-and an evidence-based stop condition.
+## 4. Write sufficient standalone briefs
 
-Do not delegate architecture or product decisions. A worker must stop and
-return a decision request when evidence contradicts the brief, scope expands,
-or a red-line boundary appears.
+Use [the worker-brief template](references/worker-brief.md). A brief must be
+self-contained enough to preserve quality: include lifecycle IDs, one exact
+objective, verified facts, owned and forbidden paths, fixed design decisions,
+risk and network boundaries, exact verification, and evidence-based stop
+conditions.
 
-## 4. Route by tier
+Do not optimize a brief for shortness. Remove duplicated transcript and raw
+logs, not decision context. The adapter's byte ceiling is a runaway guardrail,
+not a quality target; reslice a genuinely multi-objective brief or record an
+explicit ceiling exception.
+
+A worker must stop and request a decision when evidence contradicts the brief,
+scope expands, or a red-line boundary appears.
+
+## 5. Route by tier
 
 | Tier | Role | Default model / effort | Use | Must not do |
 |---|---|---|---|---|
 | T0 | `scout` | `gpt-5.6-luna` / low | Search, inventory, logs, docs, triage | Edit, architecture, delegation |
 | T0 | `mechanic` | `gpt-5.6-luna` / low | Deterministic formatting, renames, boilerplate | Semantic or contract decisions |
 | T1 | `worker` | `gpt-5.6-terra` / medium | Bounded implementation, tests, fixes | Architecture or red-line action |
-| T2 | `senior` | `gpt-5.6-terra` / high | Cross-file implementation, refactors, performance | Architecture or red-line action |
+| T2 | `senior` | `gpt-5.6-terra` / high | Cross-file work, refactors, performance | Architecture or red-line action |
 | Review | `reviewer` | `gpt-5.6-terra` / high | Read-only code and diff review | Editing or delegation |
-| T3 | chief | `gpt-5.6-sol` / xhigh | Architecture, ambiguity, risk, integration | Routine code, diff, test, or PR review |
+| T3 | chief | `gpt-5.6-sol` / xhigh | Architecture, ambiguity, risk, convergence | Routine execution or code review |
 
-Verify that these model IDs are available to the active account before use. If
-Luna or Terra is unavailable, use the narrow fallback ladder:
+Verify model availability on the active account. If Luna or Terra is
+unavailable, use the narrow fallback ladder:
 
 - `scout` and `mechanic` → `gpt-5.4-mini` / low
 - `worker` → `gpt-5.4` / medium
 - `senior` and `reviewer` → `gpt-5.4` / high
 
-Record a fallback in the dispatch ledger. Never dispatch Sol as a worker.
+Record the fallback. Never dispatch Sol as a worker.
 
-## 5. Dispatch through the adapter
+## 6. Choose the execution path
 
-Prefer the local adapter whenever native child execution cannot independently
-prove exact child-model selection, effective sandbox narrowing, and transcript
-isolation. The adapter uses an ephemeral, model-pinned Codex process with a
-standalone brief.
+Use native ephemeral agents when the active surface proves the required role,
+model, reasoning effort, sandbox, and fresh-context behavior. Otherwise use
+`scripts/ce-dispatch.sh`, which starts a model-pinned ephemeral Codex process
+with only the standalone brief.
 
-Set a local repository allowlist first. The installer creates an empty file at
-`references/approved-repo-roots.local.txt`; until it contains a narrow Git root,
-write-capable dispatch fails closed.
+The adapter rejects Sol workers, broad or unapproved Git roots, oversized
+briefs, unchanged successful repeats, repository-local result directories, and
+unsafe write locations. Keep `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME`
+outside the repository so adapter artifacts cannot become new evidence. Write
+roles also require a brief-bound approval record and a dedicated linked
+worktree beneath the allowlisted root.
 
 ```bash
 CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
 "$CE/scripts/ce-dispatch.sh" \
   --role scout \
+  --objective-id OBJ-001 \
+  --phase-id P1-design \
+  --workstream-id WS-evidence \
   --cwd /absolute/path/to/repository \
   --brief /absolute/path/to/brief.md \
   --result-dir /absolute/path/to/local-results
 ```
 
-The adapter rejects Sol workers, broad or non-Git directories, roots outside
-the local allowlist, and oversized briefs. Write roles additionally require a
-brief-bound approval record and a dedicated linked worktree beneath the
-allowlisted root; the adapter holds an exclusive worktree lock for the run. It
-writes local JSONL events, manifests, and final results; keep all of them out
-of source control.
+After a verified availability failure, redispatch the same reviewed brief once
+with `--fallback`. Never retry a quality failure silently. An intentional
+unchanged repeat requires a non-blank `--repeat-reason` with the new evidence or
+question.
 
-After a verified Luna/Terra availability failure, redispatch the same reviewed
-brief once with `--fallback`. Never retry a quality failure silently.
+Automatic repository fingerprints exclude ignored files. When ignored runtime
+evidence affects the task, put its digest in the reviewed brief. If it changes
+afterward, update that digest or record the new evidence with
+`--repeat-reason`; never hash whole cache, dependency, build, or secret trees.
 
-## 6. Parallelize deliberately
+## 7. Control concurrency and convergence
 
-- Start at most two independent workers in a wave. A third requires documented
-  dependency, disjoint ownership, and a convergence plan.
-- Every write role requires a project-local isolated worktree. Serialize if
-  isolation fails or the worktree lock is busy.
-- Block only tasks that consume the blocking evidence or decision.
-- Keep chief phases short: one decision phase, then one integration phase.
-- Do not tail logs or poll worker output. Wait for structured completion state.
+- Usually keep one or two active persistent workstreams. Start at most two
+  write executors in a wave. Read-only scouts may fan out further when their
+  questions are independent and the chief defines a convergence plan.
+- Every write role uses an isolated project-local worktree. Serialize when
+  isolation fails or its lock is busy.
+- Block only work that consumes the missing evidence or decision.
+- Do not tail logs or repeatedly reread worker output. Wait for structured
+  completion and bring only decision-relevant evidence back to the chief.
 
-## 7. Verify and review
+## 8. Verify, review, and observe
 
-- Treat worker output as untrusted. Inspect the actual diff or artifact and
-  rerun claimed verification.
-- Use the read-only reviewer role for internal code review. The chief may review
-  architecture, interfaces, risk, and release evidence, but never code, diffs,
-  tests, or PR feedback.
-- Use an independent external reviewer for cross-model code QA before a PR.
-- Complete the repository's GitHub review and CI closure after push.
+- Inspect the actual artifact and rerun claimed verification.
+- Use the read-only reviewer role for code, diff, test, and PR review. The chief
+  reviews architecture, interfaces, risk, and release evidence.
+- Use an independent external reviewer when project policy requires
+  cross-model QA, then complete CI and repository review closure.
+- Re-review only when the diff fingerprint, verification evidence, or review
+  question changed—not to satisfy an arbitrary review count.
 
-## 8. Observe cost without exposing content
-
-Use `scripts/ce-token-report.py` to inspect local routing and guardrail drift.
-It reads the local Codex state database in read-only mode and hides task titles
-by default. Use `--include-titles` only where those titles are safe to display.
-
-Record factual dispatch decisions in a local ledger:
-
-```markdown
-# <task> dispatch ledger — YYYY-MM-DD
-| # | Brief | Tier | Requested model | Actual model | Budget | Ownership | Status | Verification | Review |
-|---|---|---|---|---|---|---|---|---|---|
-
-Decision: <why this is the cheapest safe route>
-Escalations: <failed tier, evidence, next action>
-```
+Use `scripts/ce-token-report.py` for exact daily turn usage, cached versus
+uncached input, phase manifests, repeated fingerprints, and concurrent write
+fan-out. The blocking write-concurrency check spans the whole objective, even
+when runs carry different phase IDs; phase rows are diagnostic only. Historical
+session-health alerts are advisory; current dispatch failures and guardrail
+violations are a manual pre-wave gate: run the report with `--objective-id`,
+and do not dispatch the next wave when it exits nonzero. The adapter does not
+invoke this potentially expensive report automatically.
 
 ## Completion standard
 
-Before claiming completion, inspect the final diff, rerun verification, confirm
-the adapter or report output, and state any residual risk. Do not claim routing
-worked merely because a worker was spawned.
+Before claiming completion, confirm the persisted chief state, final artifact,
+reproduced verification, required review closure, and residual risk. A spawned
+worker, created task, or compaction is never evidence of completion.
