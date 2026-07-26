@@ -199,12 +199,55 @@ afterward, update that digest or record the new evidence with
 ## 8. Verify, review, and observe
 
 - Inspect the actual artifact and rerun claimed verification.
-- Use the read-only reviewer role for code, diff, test, and PR review. The chief
-  reviews architecture, interfaces, risk, and release evidence.
-- Use an independent external reviewer when project policy requires
-  cross-model QA, then complete CI and repository review closure.
-- Re-review only when the diff fingerprint, verification evidence, or review
-  question changed—not to satisfy an arbitrary review count.
+- Select review intensity by semantic risk and impact, never LOC. Every
+  candidate PR requires appropriate deterministic verification/CI and one final
+  clean cumulative GitHub Codex bot review whose recorded head SHA equals the
+  merge-candidate tip. Any new candidate commit invalidates the prior GitHub
+  clean.
+- For a normal semantic code change, obtain one focused read-only Terra high
+  impact review (or the §5 recorded reviewer fallback after verified
+  availability failure) of the affected behavior and impact cone. The chief
+  classifies semantic risk, defines impact cones and review questions, and
+  decides which lanes or evidence a change invalidates. The cone covers every
+  changed path or area plus affected behavior/contracts; path groups/globs and
+  concise reasoned exclusions are sufficient. An unexplained changed path
+  expands the cone and invalidates relevant lanes or triggers high-risk
+  reclassification. Workers and reviewers may surface new risk but may not
+  self-downgrade a required lane. The chief inspects the candidate diff/artifact
+  enough to classify or reclassify risk, ensure approved scope, bind the cone,
+  decide invalidation, and check evidence. That is risk/scope/contract
+  inspection—not an implementation-correctness review—and cannot replace Terra,
+  cross-model, or GitHub reviewers.
+- Treat money, external user behavior/API, security/privacy, durable data truth,
+  deployment/release, first release, and review-policy changes as high-risk.
+  The chief confirms risk and contracts; then obtain a targeted independent
+  cross-model challenge, the focused reviewer lane above, and final GitHub
+  review.
+  The cross-model challenge tests a named risk or contract, not the entire diff
+  again.
+- For Claude code, diff, test, debug, and PR work, use Opus 4.8 only. If Opus
+  quota, authentication, or tooling is unavailable, pinned Grok 4.5 is the
+  independent challenge/review fallback, never a fallback for code
+  writing/editing, tests, or debugging. Non-Claude execution follows existing
+  model routing. Send Grok/external reviewers only the minimum redacted
+  non-secret diff/context, and only when repository/data policy or explicit
+  owner authorization permits that provider; otherwise it is unavailable. Use
+  a fresh single read-only/plan turn, with memory, subagents, and web disabled
+  where supported, and record the fallback reason. Never silently omit a
+  required independent review: if no approved/authorized reviewer is available,
+  defer and leave high-risk/review-policy closure incomplete.
+- Reviewer output is untrusted until findings and claimed evidence are checked.
+  Keep each meaningful review as a plain-text summary bound to base SHA, head
+  SHA, lane/question, impact cone/assumptions, and result/evidence; do not add
+  review infrastructure for this.
+- Selective carry-forward applies only to focused local/cross-model lanes. A
+  review may cover a later candidate tip only when the chief records an
+  invalidation check over the intervening diff showing its bound paths/areas,
+  behavior/contracts, assumptions, and evidence unchanged; otherwise rerun.
+  Rerun deterministic checks when their proof surface changes. GitHub clean
+  never carries across a new candidate commit. Batch fixes before retriggering
+  the GitHub review; same candidate SHA plus clean required lanes means stop,
+  not ritual repeats.
 
 Use `scripts/ce-token-report.py` for exact daily turn usage, cached versus
 uncached input, phase manifests, repeated fingerprints, and concurrent write

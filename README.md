@@ -23,7 +23,7 @@ flowchart TB
   G -->|"No"| S["Read-only discovery"]
   G -->|"Yes"| E["Ephemeral executors\nLuna / Terra"]
   G -->|"Only when stateful"| W["Reusable workstream task"]
-  E --> V["Reproduced verification\nTerra review"]
+  E --> V["Risk-based review\nverification + Terra as needed"]
   W --> V
   V --> H["Persisted handoff"]
   H --> P2["Fresh chief phase when justified\nPrevious chief retires"]
@@ -39,7 +39,10 @@ flowchart TB
 | Task topology | Visible phase/workstream tasks require approval and are reused, not multiplied |
 | Compaction | Health signal only; never an automatic “create task” trigger |
 | Routine execution | Model-pinned Luna or Terra workers with a sufficient standalone brief |
-| Code review | Read-only Terra reviewer; use an independent external reviewer for cross-model QA |
+| Review intensity | Semantic risk and impact, never LOC |
+| Normal semantic code | Focused read-only Terra high review by default (recorded reviewer fallback only after verified availability failure) |
+| High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
+| PR closure | Appropriate deterministic verification/CI and one clean cumulative GitHub Codex bot review whose recorded head SHA equals the merge-candidate tip |
 | Approval | Write workers require an explicit, brief-bound approval record |
 | Repository boundary | Every adapter role is limited to a local allowlist of Git roots |
 | Write isolation | Every write worker uses a dedicated project-local linked worktree and lock |
@@ -178,6 +181,48 @@ ephemeral agents are suitable when the active surface proves the requested
 role, model, reasoning effort, sandbox, and fresh-context behavior. The direct
 dispatch adapter is the portable fallback when any of those properties is not
 observable.
+
+## Review lifecycle
+
+Review is risk-based, not a fixed stack repeated for every change. All candidate
+PRs receive the checks that prove their changed surface and a final clean
+cumulative GitHub Codex bot review whose recorded head SHA equals the
+merge-candidate tip. Any new candidate commit invalidates the prior GitHub
+clean. Normal semantic code changes also receive one focused, read-only Terra
+high review by default; the recorded reviewer fallback applies only after
+verified availability failure.
+
+High-risk changes—money, external user behavior or API, security/privacy,
+durable-data truth, deployment/release, first release, and review-policy
+changes—add chief-owned risk and contract confirmation plus a targeted
+independent cross-model challenge. That challenge tests the named risk or
+contract; it is not a duplicate generic full-diff review. The chief classifies
+semantic risk, defines impact cones and review questions, and decides which
+lanes or evidence a change invalidates. The cone accounts for every changed
+path/area and affected behavior/contracts; path groups/globs and concise
+reasoned exclusions are enough. An unexplained changed path expands the cone
+and invalidates relevant lanes or triggers high-risk reclassification. Workers
+and reviewers may surface risk but cannot self-downgrade required lanes. The
+chief inspects the candidate diff/artifact enough for risk, scope, contract, and
+evidence checks; this is not an implementation-correctness review and cannot
+replace Terra, cross-model, or GitHub review. Claude code-review work uses Opus
+4.8. If it is unavailable, pinned Grok 4.5 may be used only as the independent
+challenge/review fallback, never for code writing/editing, tests, or debugging;
+non-Claude execution follows existing model routing. It receives only the
+minimum redacted non-secret context and only when repository/data policy or
+explicit owner authorization permits that provider; otherwise it is unavailable.
+Record the fallback reason. If no approved/authorized independent reviewer is
+available, defer the work and leave high-risk/review-policy closure incomplete.
+
+Review findings and claimed evidence are checked before acceptance. A concise
+plain-text review summary records the base and head SHA, its question and
+impact cone, assumptions, and result/evidence. Focused local/cross-model lanes
+may carry to a later candidate tip only when the chief records an
+intervening-diff invalidation check showing their bound paths/areas,
+behavior/contracts, assumptions, and evidence unchanged; otherwise they rerun.
+Deterministic checks follow their proof surface. GitHub clean never carries
+across a new candidate commit. Batch fixes before asking for the final GitHub
+review again; clean required lanes on the same candidate SHA end review.
 
 ## Optional token observability
 
