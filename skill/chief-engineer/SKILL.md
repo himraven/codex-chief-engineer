@@ -228,8 +228,12 @@ afterward, update that digest or record the new evidence with
   again.
 - Claude role ladder: Haiku 4.5 = mechanical sweeps only; Sonnet 5 = bounded
   worker implementation/tests/debugging; Opus 5 = senior cross-file execution
-  plus eligible independent review/challenge; Fable 5 = Claude-side interactive
-  chief for architecture/risk/RCA, never routine dispatch/review-throughput.
+  plus eligible independent review/challenge; Fable 5 is the Claude-side
+  interactive chief for architecture/risk/RCA on the Claude surface. In a Codex
+  run, Fable has no chief role: it may provide only non-binding architecture/
+  risk/RCA advice or a named, non-binding challenge to Sol; Sol remains the
+  sole active chief and decision owner for that Codex run. Fable is never an
+  executor or review-throughput target.
   Any Claude lane requires Anthropic to be permitted by repository/data policy
   or explicit owner authorization. A Claude review/challenge (including Opus
   4.8 fallback) is independent only if Claude did not author the affected

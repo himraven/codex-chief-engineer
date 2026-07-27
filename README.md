@@ -209,8 +209,12 @@ evidence checks; this is not an implementation-correctness review and cannot
 replace Terra, cross-model, or GitHub review. Claude roles: Haiku 4.5 handles
 mechanical sweeps only; Sonnet 5 handles bounded implementation/tests/debugging;
 Opus 5 handles senior cross-file execution plus eligible independent
-review/challenge; Fable 5 is the interactive Claude chief for architecture,
-risk, and RCA, never routine dispatch/review throughput. Any Claude lane
+review/challenge. Fable 5 is the Claude-side interactive chief for
+architecture/risk/RCA on the Claude surface. In a Codex run, Fable has no chief
+role: it may provide only non-binding architecture/risk/RCA advice or a named,
+non-binding challenge to Sol; Sol remains the sole active chief and decision
+owner for that Codex run. Fable is never an executor or review-throughput
+target. Any Claude lane
 requires Anthropic to be permitted by repository/data policy or explicit owner
 authorization. A Claude review, including Opus 4.8 fallback, is independent
 only when Claude did not author the affected change, including Claude-owned
