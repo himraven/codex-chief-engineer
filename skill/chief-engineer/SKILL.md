@@ -242,8 +242,9 @@ afterward, update that digest or record the new evidence with
   authorization—record the ineligibility and route the separate targeted
   challenge directly to an authorized non-authoring cross-model provider
   (normally pinned Grok 4.5); this is ineligibility, not an Opus availability
-  failure. If no authorized provider is available, defer. For an
-  eligible Claude lane, use `claude-opus-5` first: run the cheap/fast first pass
+  failure. If no authorized provider is available, defer. For an eligible
+  independent Claude review/challenge lane, use `claude-opus-5` first: run the
+  cheap/fast first pass
   at `--effort low` (raise only to `medium` when the focused impact cone needs
   somewhat more breadth), and use `--effort high` only for a thorough pass
   demanded by findings or the semantic risk tier; never default to `xhigh` or
