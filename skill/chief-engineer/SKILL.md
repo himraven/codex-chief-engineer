@@ -222,20 +222,53 @@ afterward, update that digest or record the new evidence with
   deployment/release, first release, and review-policy changes as high-risk.
   The chief confirms risk and contracts; then obtain a targeted independent
   cross-model challenge, the focused reviewer lane above, and final GitHub
-  review.
+  review. The focused Terra review and targeted cross-model challenge are
+  distinct lanes and cannot be satisfied by the same review.
   The cross-model challenge tests a named risk or contract, not the entire diff
   again.
-- For Claude code, diff, test, debug, and PR work, use Opus 4.8 only. If Opus
-  quota, authentication, or tooling is unavailable, pinned Grok 4.5 is the
-  independent challenge/review fallback, never a fallback for code
-  writing/editing, tests, or debugging. Non-Claude execution follows existing
-  model routing. Send Grok/external reviewers only the minimum redacted
-  non-secret diff/context, and only when repository/data policy or explicit
-  owner authorization permits that provider; otherwise it is unavailable. Use
-  a fresh single read-only/plan turn, with memory, subagents, and web disabled
-  where supported, and record the fallback reason. Never silently omit a
-  required independent review: if no approved/authorized reviewer is available,
-  defer and leave high-risk/review-policy closure incomplete.
+- Claude role ladder: Haiku 4.5 = mechanical sweeps only; Sonnet 5 = bounded
+  worker implementation/tests/debugging; Opus 5 = senior cross-file execution
+  plus eligible independent review/challenge; Fable 5 = Claude-side interactive
+  chief for architecture/risk/RCA, never routine dispatch/review-throughput.
+  Any Claude lane requires Anthropic to be permitted by repository/data policy
+  or explicit owner authorization. A Claude review/challenge (including Opus
+  4.8 fallback) is independent only if Claude did not author the affected
+  change (including Claude-owned design/contract decisions). If Claude is
+  ineligible—because it authored the affected change or Anthropic lacks that
+  authorization—record the ineligibility and route the separate targeted
+  challenge directly to an authorized non-authoring cross-model provider
+  (normally pinned Grok 4.5); this is ineligibility, not an Opus availability
+  failure. If no authorized provider is available, defer. For an
+  eligible Claude lane, use `claude-opus-5` first: run the cheap/fast first pass
+  at `--effort low` (raise only to `medium` when the focused impact cone needs
+  somewhat more breadth), and use `--effort high` only for a thorough pass
+  demanded by findings or the semantic risk tier; never default to `xhigh` or
+  `max`. Keep thinking enabled. Run a fresh, non-resumed, single read-only turn
+  with no prior-memory carryover, no redelegation or subagent spawning, and web
+  disabled; include any auto-loaded instruction files in authorized context.
+  Read/Grep/Glob access stays within the authorized chief-bound impact cone.
+  Invoke
+  `claude -p --model claude-opus-5 --effort low --allowedTools "Read,Grep,Glob" --output-format json < /absolute/path/to/review-prompt.txt`
+  (substitute `medium` or `high` per escalation rule; for the recorded 4.8
+  fallback, substitute `--model claude-opus-4-8 --effort high`). The prompt file
+  is outside the repo and contains only the minimum authorized/redacted prompt+diff;
+  never interpolate raw diffs into shell arguments. The prompt requests every
+  finding with confidence and severity; filtering happens downstream. It treats
+  listed already-reproduced commands/results as the evidence contract, must not
+  request or rerun generic double-check/re-verify steps, and reports but does
+  not investigate out-of-cone risk. After a verified Opus 5 availability
+  failure, use Opus 4.8 at `--effort high` only as the recorded availability
+  fallback. Only after a separately verified Opus 4.8 availability failure is
+  pinned Grok 4.5 the final approved independent availability fallback for
+  review/challenge only, never for code writing/editing, tests, or debugging.
+  Non-Claude execution follows existing model routing. Send Grok/external
+  reviewers only the minimum redacted non-secret diff/context, and only when
+  repository/data policy or explicit owner authorization permits that provider;
+  otherwise it is unavailable. For Grok, use a fresh single read-only/plan turn
+  with memory, subagents, and web disabled where supported. Record every
+  verified failure, ineligibility, and fallback. Never silently omit a required
+  independent review: if no approved/authorized reviewer is available, defer
+  and leave high-risk/review-policy closure incomplete.
 - Reviewer output is untrusted until findings and claimed evidence are checked.
   Keep each meaningful review as a plain-text summary bound to base SHA, head
   SHA, lane/question, impact cone/assumptions, and result/evidence; do not add

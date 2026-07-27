@@ -23,7 +23,7 @@ flowchart TB
   G -->|"No"| S["Read-only discovery"]
   G -->|"Yes"| E["Ephemeral executors\nLuna / Terra"]
   G -->|"Only when stateful"| W["Reusable workstream task"]
-  E --> V["Risk-based review\nverification + Terra as needed"]
+  E --> V["Risk-based review\nverification + required lanes"]
   W --> V
   V --> H["Persisted handoff"]
   H --> P2["Fresh chief phase when justified\nPrevious chief retires"]
@@ -195,8 +195,9 @@ verified availability failure.
 High-risk changes—money, external user behavior or API, security/privacy,
 durable-data truth, deployment/release, first release, and review-policy
 changes—add chief-owned risk and contract confirmation plus a targeted
-independent cross-model challenge. That challenge tests the named risk or
-contract; it is not a duplicate generic full-diff review. The chief classifies
+independent cross-model challenge and the focused Terra lane above. That
+challenge tests the named risk or contract; it is not a duplicate generic
+full-diff review. The chief classifies
 semantic risk, defines impact cones and review questions, and decides which
 lanes or evidence a change invalidates. The cone accounts for every changed
 path/area and affected behavior/contracts; path groups/globs and concise
@@ -205,14 +206,32 @@ and invalidates relevant lanes or triggers high-risk reclassification. Workers
 and reviewers may surface risk but cannot self-downgrade required lanes. The
 chief inspects the candidate diff/artifact enough for risk, scope, contract, and
 evidence checks; this is not an implementation-correctness review and cannot
-replace Terra, cross-model, or GitHub review. Claude code-review work uses Opus
-4.8. If it is unavailable, pinned Grok 4.5 may be used only as the independent
-challenge/review fallback, never for code writing/editing, tests, or debugging;
-non-Claude execution follows existing model routing. It receives only the
-minimum redacted non-secret context and only when repository/data policy or
-explicit owner authorization permits that provider; otherwise it is unavailable.
-Record the fallback reason. If no approved/authorized independent reviewer is
-available, defer the work and leave high-risk/review-policy closure incomplete.
+replace Terra, cross-model, or GitHub review. Claude roles: Haiku 4.5 handles
+mechanical sweeps only; Sonnet 5 handles bounded implementation/tests/debugging;
+Opus 5 handles senior cross-file execution plus eligible independent
+review/challenge; Fable 5 is the interactive Claude chief for architecture,
+risk, and RCA, never routine dispatch/review throughput. Any Claude lane
+requires Anthropic to be permitted by repository/data policy or explicit owner
+authorization. A Claude review, including Opus 4.8 fallback, is independent
+only when Claude did not author the affected change, including Claude-owned
+design/contract decisions. The focused Terra review and targeted cross-model
+challenge are distinct lanes and cannot be satisfied by the same review. If
+Claude is ineligible because it authored the affected change or Anthropic lacks
+that authorization, record the ineligibility and route the separate targeted
+challenge to an authorized non-authoring provider (normally pinned Grok 4.5),
+or defer if no authorized provider is available. For an eligible Claude review,
+use a fresh non-resumed read-only turn with authorized instruction context, no
+redelegation, no subagents, and no web; request every finding with confidence
+and severity, stay inside the authorized chief-bound cone, and use listed
+reproduced results without generic double-check/re-verify reruns. Its
+availability order is Opus 5, then separately verified Opus 4.8 at high
+effort, then authorized Grok 4.5; Grok never writes, tests, or debugs. Grok
+receives only the minimum redacted
+non-secret context and only when repository/data policy or explicit owner
+authorization permits that provider; otherwise it is unavailable. Record every
+verified failure, ineligibility, and fallback. If no approved/authorized
+independent reviewer is available, defer the work and leave high-risk/review-
+policy closure incomplete.
 
 Review findings and claimed evidence are checked before acceptance. A concise
 plain-text review summary records the base and head SHA, its question and
