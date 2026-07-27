@@ -249,10 +249,12 @@ afterward, update that digest or record the new evidence with
   demanded by findings or the semantic risk tier; never default to `xhigh` or
   `max`. Keep thinking enabled. Run a fresh, non-resumed, single read-only turn
   with no prior-memory carryover, no redelegation or subagent spawning, and web
-  disabled; include any auto-loaded instruction files in authorized context.
-  Read/Grep/Glob access stays within the authorized chief-bound impact cone.
-  Invoke
-  `claude -p --model claude-opus-5 --effort low --allowedTools "Read,Grep,Glob" --output-format json < /absolute/path/to/review-prompt.txt`
+  disabled. `--tools` limits built-in availability; safe mode disables
+  CLAUDE.md/skills/plugins/hooks/MCP/custom agents; no-session-persistence
+  prevents resume. These flags enforce tool identity, not path scope; prompt/
+  brief policy binds Read/Grep/Glob to the authorized chief-bound impact cone,
+  and any out-of-cone read invalidates the review evidence. Invoke
+  `claude -p --model claude-opus-5 --effort low --tools "Read,Grep,Glob" --allowedTools "Read,Grep,Glob" --no-session-persistence --safe-mode --output-format json < /absolute/path/to/review-prompt.txt`
   (substitute `medium` or `high` per escalation rule; for the recorded 4.8
   fallback, substitute `--model claude-opus-4-8 --effort high`). The prompt file
   is outside the repo and contains only the minimum authorized/redacted prompt+diff;

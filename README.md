@@ -224,14 +224,18 @@ Claude is ineligible because it authored the affected change or Anthropic lacks
 that authorization, record the ineligibility and route the separate targeted
 challenge to an authorized non-authoring provider (normally pinned Grok 4.5),
 or defer if no authorized provider is available. For an eligible Claude review,
-use a fresh non-resumed read-only turn with authorized instruction context, no
-redelegation, no subagents, and no web; request every finding with confidence
+use a fresh non-resumed read-only turn in safe mode with no redelegation, no
+subagents, and no web. Safe mode disables CLAUDE.md/skills/plugins/hooks/MCP/
+custom agents and no-session-persistence prevents resume. Pair
+`--tools "Read,Grep,Glob"` with `--allowedTools "Read,Grep,Glob"`: they
+expose/approve only those tools, while prompt policy binds paths; any
+out-of-cone read invalidates evidence. Request every finding with confidence
 and severity, stay inside the authorized chief-bound cone, and use listed
 reproduced results without generic double-check/re-verify reruns. Its
-availability order is Opus 5, then separately verified Opus 4.8 at high
-effort, then authorized Grok 4.5; Grok never writes, tests, or debugs. Grok
-receives only the minimum redacted
-non-secret context and only when repository/data policy or explicit owner
+availability order is Opus 5, then separately verified Opus 4.8 at high effort,
+then authorized Grok 4.5; Grok never writes, tests, or debugs. Grok receives
+only the minimum redacted non-secret context and only when repository/data
+policy or explicit owner
 authorization permits that provider; otherwise it is unavailable. Record every
 verified failure, ineligibility, and fallback. If no approved/authorized
 independent reviewer is available, defer the work and leave high-risk/review-
