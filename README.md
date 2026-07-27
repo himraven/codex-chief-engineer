@@ -225,13 +225,17 @@ that authorization, record the ineligibility and route the separate targeted
 challenge to an authorized non-authoring provider (normally pinned Grok 4.5),
 or defer if no authorized provider is available. For an eligible Claude review,
 use a fresh non-resumed read-only turn in safe mode with no redelegation, no
-subagents, and no web. Safe mode disables CLAUDE.md/skills/plugins/hooks/MCP/
-custom agents and no-session-persistence prevents resume. Pair
-`--tools "Read,Grep,Glob"` with `--allowedTools "Read,Grep,Glob"`: they
-expose/approve only those tools, while prompt policy binds paths; any
-out-of-cone read invalidates evidence. Request every finding with confidence
-and severity, stay inside the authorized chief-bound cone, and use listed
-reproduced results without generic double-check/re-verify reruns. Its
+subagents, web, MCP, or writes. Default to a tool-less stdin review packet
+containing only the authorized/redacted named question, diff/context, and exact
+evidence contract. Safe mode disables CLAUDE.md/skills/plugins/hooks/MCP/custom
+agents and no-session-persistence prevents resume. If quality genuinely requires
+Read/Grep/Glob, use an OS/filesystem sandbox or projection exposing only the
+authorized cone; only then
+add paired `--tools "Read,Grep,Glob"` and `--allowedTools "Read,Grep,Glob"`.
+Prompt-only path restrictions are not access control and must not authorize a
+partial repo. Request every finding with confidence and severity, stay inside
+the authorized chief-bound cone, and use listed reproduced results without
+generic double-check/re-verify reruns. Its
 availability order is Opus 5, then separately verified Opus 4.8 at high effort,
 then authorized Grok 4.5; Grok never writes, tests, or debugs. Grok receives
 only the minimum redacted non-secret context and only when repository/data

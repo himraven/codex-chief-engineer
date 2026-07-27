@@ -248,20 +248,24 @@ afterward, update that digest or record the new evidence with
   at `--effort low` (raise only to `medium` when the focused impact cone needs
   somewhat more breadth), and use `--effort high` only for a thorough pass
   demanded by findings or the semantic risk tier; never default to `xhigh` or
-  `max`. Keep thinking enabled. Run a fresh, non-resumed, single read-only turn
-  with no prior-memory carryover, no redelegation or subagent spawning, and web
-  disabled. `--tools` limits built-in availability; safe mode disables
-  CLAUDE.md/skills/plugins/hooks/MCP/custom agents; no-session-persistence
-  prevents resume. These flags enforce tool identity, not path scope; prompt/
-  brief policy binds Read/Grep/Glob to the authorized chief-bound impact cone,
-  and any out-of-cone read invalidates the review evidence. Invoke
-  `claude -p --model claude-opus-5 --effort low --tools "Read,Grep,Glob" --allowedTools "Read,Grep,Glob" --no-session-persistence --safe-mode --output-format json < /absolute/path/to/review-prompt.txt`
+  `max`. Keep thinking enabled. Default to a tool-less stdin review packet:
+  the outside-repo prompt file contains only the minimum authorized/redacted
+  named question, diff/context, and exact evidence contract. Run a fresh,
+  non-resumed, single read-only turn with no prior-memory carryover, no
+  redelegation or subagent spawning, and no web, MCP, or writes. Invoke
+  `claude -p --model claude-opus-5 --effort low --tools "" --no-session-persistence --safe-mode --output-format json < /absolute/path/to/review-prompt.txt`
   (substitute `medium` or `high` per escalation rule; for the recorded 4.8
-  fallback, substitute `--model claude-opus-4-8 --effort high`). The prompt file
-  is outside the repo and contains only the minimum authorized/redacted prompt+diff;
-  never interpolate raw diffs into shell arguments. The prompt requests every
-  finding with confidence and severity; filtering happens downstream. It treats
-  listed already-reproduced commands/results as the evidence contract, must not
+  fallback, substitute `--model claude-opus-4-8 --effort high`). Safe mode
+  disables CLAUDE.md/skills/plugins/hooks/MCP/custom agents, and
+  no-session-persistence prevents resume. If quality genuinely requires
+  Read/Grep/Glob, run Claude inside an OS/filesystem sandbox or projection
+  exposing only the authorized cone; only then add paired
+  `--tools "Read,Grep,Glob" --allowedTools "Read,Grep,Glob"`. Prompt-only path
+  restrictions are not access control and must not be used for partial-repo
+  authorization. Never interpolate raw diffs into shell arguments. The prompt
+  requests every finding with confidence and severity; filtering happens
+  downstream. It treats listed already-reproduced commands/results as the
+  evidence contract, must not
   request or rerun generic double-check/re-verify steps, and reports but does
   not investigate out-of-cone risk. After a verified Opus 5 availability
   failure, use Opus 4.8 at `--effort high` only as the recorded availability
