@@ -6,9 +6,11 @@ substrate mechanics.
 
 ## Codex adapter
 
-Run `scripts/ce-dispatch.sh --help` before dispatch. Its help and implementation
-are authoritative for flags, model pins, budgets, sandbox selection, approved
-roots, approval records, repeat detection, and result manifests.
+Set `CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"` and run
+`"$CE/scripts/ce-dispatch.sh" --help` before dispatch. Its help and
+implementation are authoritative for flags, model pins, budgets, sandbox
+selection, approved roots, approval records, repeat detection, and result
+manifests.
 
 - Keep `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME` outside the repository.
 - If a genuinely indivisible brief exceeds the default ceiling, record the
@@ -71,7 +73,8 @@ supported.
 Run:
 
 ```bash
-python3 scripts/ce-token-report.py --objective-id <objective-id>
+CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
+python3 "$CE/scripts/ce-token-report.py" --objective-id <objective-id>
 ```
 
 The report reads local rollouts and manifests. It shows exact daily usage,

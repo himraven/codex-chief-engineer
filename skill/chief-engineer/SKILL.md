@@ -181,9 +181,11 @@ authority. Escalate quality failures; never hide them with another-model retry.
   Fix the class, not one instance.
 - Keep this rule load-bearing: the 2026-07-27 audit found 10 of 15 round-2+
   findings (67%) were unchanged code that round one reached but did not report.
-- Re-verify fixes to logic, contracts, or configuration values. For pure
-  wording, comments, or doc text with no executable semantics, skip targeted
-  re-verification; the GitHub bot on the new head is sufficient closure.
+- Re-verify fixes that can change logic, contracts, configuration, policy,
+  machine-consumed docs, generated output, or runtime behavior. Skip targeted
+  re-verification only when the fix cannot change any of them; if uncertain,
+  re-verify. Deterministic checks follow their proof surface, and the GitHub bot
+  must close the new head.
 
 ### Cross-model routing
 

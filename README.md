@@ -44,7 +44,7 @@ flowchart TB
 | Review intensity | Semantic risk and impact, never LOC |
 | Normal semantic code | Focused read-only Terra high review by default (recorded reviewer fallback only after verified availability failure) |
 | High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
-| Review repair | Re-verify logic, contract, and configuration fixes; pure wording/comment/doc-text fixes skip targeted re-verification and close with the GitHub bot on the new head |
+| Review repair | Re-verify fixes that can change logic, contracts, configuration, policy, machine-consumed docs, generated output, or runtime behavior; skip only when none can change, and re-verify when uncertain |
 | PR closure | Appropriate deterministic verification/CI and one clean cumulative GitHub Codex bot review whose recorded head SHA equals the merge-candidate tip |
 | Approval | Write workers require an explicit, brief-bound approval record |
 | Repository boundary | Every adapter role is limited to a local allowlist of Git roots |
@@ -184,10 +184,11 @@ different model IDs.
 | T3 | Architecture and integration | Sol / xhigh |
 
 The `agents/` directory provides optional custom-agent definitions. Native
-ephemeral agents are suitable when the active surface proves the requested
-role, model, reasoning effort, sandbox, and fresh-context behavior. The direct
-dispatch adapter is the portable fallback when any of those properties is not
-observable.
+ephemeral agents are suitable for write-capable roles when the active surface
+proves the requested role, model, reasoning effort, sandbox, and fresh-context
+behavior. Scouts and reviewers always use the adapter because their read-only
+boundary must be enforced by a real sandbox. The direct dispatch adapter is the
+portable fallback for other roles when any required property is not observable.
 
 ## Review lifecycle
 
@@ -199,10 +200,11 @@ clean. Normal semantic code changes also receive one focused, read-only Terra
 high review by default; the recorded reviewer fallback applies only after
 verified availability failure.
 
-After a review fix, targeted re-verification is required when logic, contracts,
-or configuration values change. Pure wording, comments, or doc text with no
-executable semantics skip targeted re-verification; deterministic checks still
-follow their proof surface, and the final GitHub clean must bind the new head.
+After a review fix, targeted re-verification is required when the change can
+affect logic, contracts, configuration, policy, machine-consumed docs, generated
+output, or runtime behavior. Skip only when none can change; if uncertain,
+re-verify. Deterministic checks still follow their proof surface, and the final
+GitHub clean must bind the new head.
 
 High-risk changes—money, external user behavior or API, security/privacy,
 durable-data truth, deployment/release, first release, and review-policy
