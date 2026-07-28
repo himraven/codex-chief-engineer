@@ -106,7 +106,7 @@ Verify availability. If Luna or Terra is unavailable, record the fallback:
 ## 6. Choose the execution path
 
 Use native ephemeral agents only when the surface proves role, model, effort,
-sandbox, and fresh context. Otherwise use `scripts/ce-dispatch.sh`.
+sandbox, and fresh context. Otherwise use the installed adapter.
 
 Enforce read-only roles with a real sandbox. `scout` and `reviewer` always use
 the adapter, never a Desktop native child that inherits the parent sandbox.
@@ -214,7 +214,7 @@ authority. Escalate quality failures; never hide them with another-model retry.
   assumptions, and evidence unchanged. Otherwise rerun.
 - Rerun deterministic checks when their proof changes. Never carry GitHub clean
   across a commit. Batch fixes; stop at the same SHA with clean required lanes.
-- Before a write wave, run `scripts/ce-token-report.py` for the objective. Stop
+- Before a write wave, run the installed token report for the objective. Stop
   on current guardrail failures; treat historical health signals as advisory.
 
 ## Completion standard
