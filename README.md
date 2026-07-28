@@ -172,8 +172,11 @@ The adapter's `--help` remains authoritative for its interface.
 ## Model routing
 
 The bundled defaults use the GPT-5.6 family available to the original setup.
-Edit the skill table and matching write-capable `agents/` TOML files if your
-Codex account exposes different model IDs.
+If your Codex account exposes different model IDs, update the skill table,
+matching write-capable `agents/` TOML files, and the primary/fallback role pins
+in `skill/chief-engineer/scripts/ce-dispatch.sh`. For an existing installation,
+make the same changes in its installed copies; the installer never overwrites
+them.
 
 | Tier | Role | Default model / effort |
 |---|---|---|
