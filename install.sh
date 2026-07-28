@@ -6,8 +6,8 @@ usage() {
   cat <<'USAGE'
 Usage: ./install.sh [--dry-run]
 
-Installs the skill and optional custom agents into CODEX_HOME (default:
-~/.codex). The installer refuses to overwrite existing targets.
+Installs the skill and optional write-capable custom agents into CODEX_HOME
+(default: ~/.codex). The installer refuses to overwrite existing targets.
 USAGE
 }
 
@@ -32,15 +32,34 @@ fi
 
 skill_src="$repo_root/skill/chief-engineer"
 agents_src="$repo_root/agents"
+native_agent_sources=(
+  "$agents_src/ce-mechanic.toml"
+  "$agents_src/ce-worker.toml"
+  "$agents_src/ce-senior.toml"
+)
 
 [[ -f "$skill_src/SKILL.md" ]] || { printf 'Skill source is missing.\n' >&2; exit 66; }
 [[ -d "$agents_src" ]] || { printf 'Agent source is missing.\n' >&2; exit 66; }
+for source in "${native_agent_sources[@]}"; do
+  [[ -f "$source" ]] || { printf 'Native agent source is missing: %s\n' "$source" >&2; exit 66; }
+done
 
 skill_dst="$codex_home/skills/chief-engineer"
 agents_dst="$codex_home/agents"
+adapter_only_native_targets=(
+  "$agents_dst/ce-scout.toml"
+  "$agents_dst/ce-reviewer.toml"
+)
+for target in "${adapter_only_native_targets[@]}"; do
+  if [[ -e "$target" || -L "$target" ]]; then
+    printf 'Refusing adapter-only native agent already present: %s\n' "$target" >&2
+    printf 'Move it outside CODEX_HOME before installing this policy.\n' >&2
+    exit 69
+  fi
+done
+
 targets=("$skill_dst")
-for source in "$agents_src"/*.toml; do
-  [[ -f "$source" ]] || continue
+for source in "${native_agent_sources[@]}"; do
   targets+=("$agents_dst/$(basename "$source")")
 done
 for target in "${targets[@]}"; do
@@ -52,7 +71,7 @@ done
 
 if [[ "$dry_run" == true ]]; then
   printf 'Would install skill to %s\n' "$skill_dst"
-  printf 'Would install custom agents to %s\n' "$agents_dst"
+  printf 'Would install write-capable custom agents to %s\n' "$agents_dst"
   printf 'Would create an empty local repository allowlist after installation.\n'
   exit 0
 fi
@@ -66,8 +85,7 @@ case "$agents_parent" in "$codex_home"/*) ;; *) printf 'Refusing agents parent o
 skill_dst="$skills_parent/chief-engineer"
 agents_dst="$agents_parent"
 cp -R "$skill_src" "$skill_dst"
-for source in "$agents_src"/*.toml; do
-  [[ -f "$source" ]] || continue
+for source in "${native_agent_sources[@]}"; do
   cp "$source" "$agents_dst/$(basename "$source")"
 done
 cp "$skill_dst/references/approved-repo-roots.example.txt" \

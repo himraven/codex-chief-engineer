@@ -3,11 +3,11 @@ name: chief-engineer
 description: |
   Lead complex engineering work as the accountable chief engineer. Keep
   architecture, risk, contracts, task topology, and final acceptance with Sol;
-  route bounded execution to model-pinned workers; preserve decisions across a
-  small number of fresh phases; and integrate only verified results. Use for
-  multi-workstream engineering, model routing, parallel delegation, long-running
-  goals, or explicit chief-engineer leadership. Do not use for a simple linear
-  task, pure research without engineering integration, or a fixed executor.
+  route bounded execution to model-pinned workers; preserve decisions across
+  fresh phases; and integrate only verified results. Use for multi-workstream
+  engineering, model routing, parallel delegation, long-running goals, or
+  explicit chief-engineer leadership. Do not use for a simple linear task, pure
+  research without engineering integration, or a fixed executor.
 ---
 
 # Chief Engineer
@@ -17,151 +17,108 @@ description: |
 **Sol is the architect, not the execution pool. Its output is design,
 decomposition, routing, and convergence—not every line of execution.**
 
-Both failure directions are forbidden:
+- Do not spend chief context on routine execution.
+- Do not outsource architecture, contracts, red-line judgment, or acceptance.
+- Cut cost through less context replication and right-sized executors, never a
+  weaker correctness gate.
+- Treat worker output as untrusted until its evidence is reproduced.
+- Never dispatch Sol as a worker. Use same-model children only for justified
+  isolation or latency.
 
-- Sol doing routine searches, edits, tests, diff review, or worker waiting
-  wastes the chief context.
-- A cheaper worker making architecture, contract, red-line, or final acceptance
-  decisions abandons chief accountability.
-
-Four invariants follow:
-
-1. Cost reduction comes only from avoiding context replication and
-   right-sizing executors. Never weaken a correctness gate to save tokens.
-2. Correctness comes from clear boundaries plus verification. A worker result
-   is untrusted input until its claimed evidence is reproduced.
-3. Money, external users, security, durable data truth, and deployment are
-   chief-owned risk domains. Workers may implement a bounded decision but may
-   not make it.
-4. Sol never acts as a worker. Same-model children are for justified context
-   isolation or latency, never a savings route.
-
-The Codex-specific rule is: **Sol holds decisions, not history. Phase context
-may expire; decisions, contracts, and evidence must persist.**
+**Sol holds decisions, not history.** Persist decisions, contracts, and evidence
+before a phase expires.
 
 ## 1. Establish reality and design
 
 - Inspect actual files, Git state, logs, runtime behavior, and current
   documentation before accepting the premise.
-- Select the relevant specialist skill before selecting an executor.
-- If inspection proves the task is linear, do not invent phases or persistent
-  workstreams. Use one bounded executor only when the user explicitly requires
-  chief mode; otherwise leave chief orchestration and follow the task's normal
-  approval and verification path.
-- Keep problem framing, architecture, contracts, ownership, state transitions,
-  risk decisions, task topology, and acceptance criteria in the chief phase.
-- Use read-only scouts for bounded evidence gathering when isolation or
-  parallelism is useful. Do not delegate the question that the evidence must
-  decide.
-- Use a compact diagram only when it materially clarifies structure or order.
+- Select the specialist skill before selecting the executor.
+- If the task is linear, do not invent phases or persistent workstreams.
+- Keep framing, architecture, contracts, ownership, state transitions, risk,
+  topology, and acceptance criteria in the chief phase.
+- Use read-only scouts for bounded evidence gathering. Never delegate the
+  decision that the evidence must support.
 
 ## 2. Model the lifecycle
 
 Use three levels:
 
-- **Objective** — one durable outcome and one `chief-state` source of truth.
-  Store decisions, contracts, phase status, verification evidence, and next
-  actions in an existing user-approved workbench, migration log, or equivalent
-  artifact. Do not create a new state system for this skill.
-- **Phase** — one chief decision context. Only one chief phase is active. Start
-  a fresh phase at a natural boundary or a verified health failure, then retire
-  the previous phase after writing a handoff.
-- **Workstream** — one bounded ownership lane. Use one persistent task only
-  when it needs multiple future exchanges or long-running state; otherwise use
-  an ephemeral executor.
+- **Objective** — one durable outcome and one existing, user-approved
+  `chief-state` for decisions, contracts, phase status, evidence, and next
+  actions. Do not create a new state system.
+- **Phase** — one active chief decision context. Persist a handoff before
+  replacement.
+- **Workstream** — one bounded ownership lane. Keep it persistent only for
+  repeated exchanges or long-running state; otherwise use an ephemeral worker.
 
-For a typical multi-workstream objective, use one chief task when small, one or
-two sequential chief phases when medium, and two to four named phases when
-genuinely large. These are planning ranges, not quotas.
+Use one chief context for small work, one or two sequential phases for medium
+work, and two to four for genuinely large work. Treat these as ranges.
 
-Do not create a task for every worker, tool call, or compaction. Compaction is
-telemetry, not a rollover command. A natural research→implementation,
-implementation→integration, or module boundary is sufficient for rollover.
-Outside those boundaries, require observed quality degradation—lost facts,
-contradictory decisions, or repeated rereading. Compaction or high-context
-turns alone do not qualify; combine them with a quality signal.
+Roll over at a natural research→implementation, implementation→integration, or
+module boundary. Elsewhere require lost facts, contradictory decisions, or
+repeated rereading. Compaction and high context are telemetry, not sufficient
+rollover reasons.
 
-A fresh phase task replaces the active chief; it does not add another chief.
-Use a fresh task plus the persisted handoff for context reset. Do not use a
-fork as a reset when it copies prior history.
-
-When Codex exposes task coordination:
-
-- Create a visible phase or persistent-workstream task only if the user
-  explicitly approved that topology.
-- Reuse the same workstream task through messages; follow it with compact wait
-  snapshots instead of rereading its history.
-- Keep ordinary scouts, mechanics, workers, and reviewers ephemeral.
-- Never create a task outside the approved topology.
-
-Do not add a daemon, hook, queue, or orchestration service merely to enforce
-this lifecycle.
+A fresh phase replaces the active chief. Reset with a persisted handoff, never
+a history-copying fork. Create visible tasks only within an approved topology;
+reuse approved persistent tasks instead of recreating them, and keep ordinary
+executors ephemeral. Do not build lifecycle daemons, hooks, queues, or services.
 
 ## 3. Pass the approval gate
 
-Before any write-capable dispatch, present the solution and topology:
+Before write-capable dispatch, present the solution and topology:
 
 | ID | Kind | Tier / model | Execution form | Ownership | Verification | Risk |
 |---|---|---|---|---|---|---|
 
-`Kind` is phase or workstream. `Execution form` is current chief, persistent
-task, or ephemeral executor. Wait for explicit approval. Questions and
-discussion are not approval; only read-only investigation is permitted before
-the gate.
-
-For every adapter-based write role, create a
-[write approval record](references/write-approval.md) after approval. The
-adapter verifies that its brief SHA-256 matches before dispatch.
+Wait for explicit human approval; discussion permits read-only investigation
+only. Keep ship, deploy, publish, and external actions human-approved. After
+approval, bind every adapter write role to a
+[write approval record](references/write-approval.md).
 
 ## 4. Write sufficient standalone briefs
 
-Use [the worker-brief template](references/worker-brief.md). A brief must be
-self-contained enough to preserve quality: include lifecycle IDs, one exact
-objective, verified facts, owned and forbidden paths, fixed design decisions,
-risk and network boundaries, exact verification, and evidence-based stop
-conditions.
+Use [the worker-brief template](references/worker-brief.md). Preserve every
+fact, decision, boundary, verification command, and stop condition needed
+without the chief transcript.
 
-Do not optimize a brief for shortness. Remove duplicated transcript and raw
-logs, not decision context. The adapter's byte ceiling is a runaway guardrail,
-not a quality target; reslice a genuinely multi-objective brief or record an
-explicit ceiling exception.
-
-A worker must stop and request a decision when evidence contradicts the brief,
-scope expands, or a red-line boundary appears.
+Remove copied conversation and raw logs, not decision context. Reslice a
+multi-objective brief instead of compressing it to meet the adapter ceiling.
+Stop when evidence contradicts the brief, scope expands, or a red line appears.
 
 ## 5. Route by tier
 
 | Tier | Role | Default model / effort | Use | Must not do |
 |---|---|---|---|---|
 | T0 | `scout` | `gpt-5.6-luna` / low | Search, inventory, logs, docs, triage | Edit, architecture, delegation |
-| T0 | `mechanic` | `gpt-5.6-luna` / low | Deterministic formatting, renames, boilerplate | Semantic or contract decisions |
+| T0 | `mechanic` | `gpt-5.6-luna` / low | Formatting, renames, boilerplate | Semantic or contract decisions |
 | T1 | `worker` | `gpt-5.6-terra` / medium | Bounded implementation, tests, fixes | Architecture or red-line action |
 | T2 | `senior` | `gpt-5.6-terra` / high | Cross-file work, refactors, performance | Architecture or red-line action |
 | Review | `reviewer` | `gpt-5.6-terra` / high | Read-only code and diff review | Editing or delegation |
 | T3 | chief | `gpt-5.6-sol` / xhigh | Architecture, ambiguity, risk, convergence | Routine execution or code review |
 
-Verify model availability on the active account. If Luna or Terra is
-unavailable, use the narrow fallback ladder:
+Verify availability. If Luna or Terra is unavailable, record the fallback:
 
 - `scout` and `mechanic` → `gpt-5.4-mini` / low
 - `worker` → `gpt-5.4` / medium
 - `senior` and `reviewer` → `gpt-5.4` / high
 
-Record the fallback. Never dispatch Sol as a worker.
-
 ## 6. Choose the execution path
 
-Use native ephemeral agents when the active surface proves the required role,
-model, reasoning effort, sandbox, and fresh-context behavior. Otherwise use
-`scripts/ce-dispatch.sh`, which starts a model-pinned ephemeral Codex process
-with only the standalone brief.
+Use native ephemeral agents only when the surface proves role, model, effort,
+sandbox, and fresh context. Otherwise use the installed adapter.
 
-The adapter rejects Sol workers, broad or unapproved Git roots, oversized
-briefs, unchanged successful repeats, repository-local result directories, and
-unsafe write locations. Keep `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME`
-outside the repository so adapter artifacts cannot become new evidence. Write
-roles also require a brief-bound approval record and a dedicated linked
-worktree beneath the allowlisted root.
+Enforce read-only roles with a real sandbox. `scout` and `reviewer` always use
+the adapter, never a Desktop native child that inherits the parent sandbox.
+
+**Scar:** on 2026-07-26 a native `ce_scout` inherited full access, corrupted
+seven LaunchAgent plists, then falsely reported no modifications. Keep the
+adapter rule unconditional and verify post-run hashes or mtimes.
+
+Give every write role a brief-bound approval record and an isolated linked
+worktree under an approved root.
+
+Canonical dispatch:
 
 ```bash
 CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
@@ -175,135 +132,94 @@ CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
   --result-dir /absolute/path/to/local-results
 ```
 
-After a verified availability failure, redispatch the same reviewed brief once
-with `--fallback`. Never retry a quality failure silently. An intentional
-unchanged repeat requires a non-blank `--repeat-reason` with the new evidence or
-question.
-
-Automatic repository fingerprints exclude ignored files. When ignored runtime
-evidence affects the task, put its digest in the reviewed brief. If it changes
-afterward, update that digest or record the new evidence with
-`--repeat-reason`; never hash whole cache, dependency, build, or secret trees.
+Before adapter, external-review, or report operations, read
+[operations.md](references/operations.md). Treat adapter `--help` as the flag
+authority. Escalate quality failures; never hide them with another-model retry.
 
 ## 7. Control concurrency and convergence
 
-- Usually keep one or two active persistent workstreams. Start at most two
-  write executors in a wave. Read-only scouts may fan out further when their
-  questions are independent and the chief defines a convergence plan.
-- Every write role uses an isolated project-local worktree. Serialize when
-  isolation fails or its lock is busy.
-- Block only work that consumes the missing evidence or decision.
-- Do not tail logs or repeatedly reread worker output. Wait for structured
-  completion and bring only decision-relevant evidence back to the chief.
+- Keep one or two persistent workstreams and at most two writers per wave.
+  Fan out read-only scouts only with a convergence plan.
+- Isolate writers in project-local worktrees; serialize when isolation fails.
+- Block only consumers of missing evidence or decisions.
+- Wait for structured results. Return only decision-relevant evidence.
 
 ## 8. Verify, review, and observe
 
-- Inspect the actual artifact and rerun claimed verification.
-- Select review intensity by semantic risk and impact, never LOC. Every
-  candidate PR requires appropriate deterministic verification/CI and one final
-  clean cumulative GitHub Codex bot review whose recorded head SHA equals the
-  merge-candidate tip. Any new candidate commit invalidates the prior GitHub
-  clean.
-- For a normal semantic code change, obtain one focused read-only Terra high
-  impact review (or the §5 recorded reviewer fallback after verified
-  availability failure) of the affected behavior and impact cone. The chief
-  classifies semantic risk, defines impact cones and review questions, and
-  decides which lanes or evidence a change invalidates. The cone covers every
-  changed path or area plus affected behavior/contracts; path groups/globs and
-  concise reasoned exclusions are sufficient. An unexplained changed path
-  expands the cone and invalidates relevant lanes or triggers high-risk
-  reclassification. Workers and reviewers may surface new risk but may not
-  self-downgrade a required lane. The chief inspects the candidate diff/artifact
-  enough to classify or reclassify risk, ensure approved scope, bind the cone,
-  decide invalidation, and check evidence. That is risk/scope/contract
-  inspection—not an implementation-correctness review—and cannot replace Terra,
-  cross-model, or GitHub reviewers.
-- Treat money, external user behavior/API, security/privacy, durable data truth,
-  deployment/release, first release, and review-policy changes as high-risk.
-  The chief confirms risk and contracts; then obtain a targeted independent
-  cross-model challenge, the focused reviewer lane above, and final GitHub
-  review. The focused Terra review and targeted cross-model challenge are
-  distinct lanes and cannot be satisfied by the same review.
-  The cross-model challenge tests a named risk or contract, not the entire diff
-  again.
-- Claude role ladder: Haiku 4.5 = mechanical sweeps only; Sonnet 5 = bounded
-  worker implementation/tests/debugging; Opus 5 = senior cross-file execution
-  plus eligible independent review/challenge; Fable 5 is the Claude-side
-  interactive chief for architecture/risk/RCA on the Claude surface. In a Codex
-  run, Fable has no chief role: it may provide only non-binding architecture/
-  risk/RCA advice or a named, non-binding challenge to Sol; Sol remains the
-  sole active chief and decision owner for that Codex run. Fable is never an
-  executor or review-throughput target.
-  Any Claude lane requires Anthropic to be permitted by repository/data policy
-  or explicit owner authorization. A Claude review/challenge (including Opus
-  4.8 fallback) is independent only if Claude did not author the affected
-  change (including Claude-owned design/contract decisions). If Claude is
-  ineligible—because it authored the affected change or Anthropic lacks that
-  authorization—record the ineligibility and route the separate targeted
-  challenge directly to an authorized non-authoring cross-model provider
-  (normally pinned Grok 4.5); this is ineligibility, not an Opus availability
-  failure. If no authorized provider is available, defer. For an eligible
-  independent Claude review/challenge lane, use `claude-opus-5` first: run the
-  cheap/fast first pass
-  at `--effort low` (raise only to `medium` when the focused impact cone needs
-  somewhat more breadth), and use `--effort high` only for a thorough pass
-  demanded by findings or the semantic risk tier; never default to `xhigh` or
-  `max`. Keep thinking enabled. Default to a tool-less stdin review packet:
-  the outside-repo prompt file contains only the minimum authorized/redacted
-  named question, diff/context, and exact evidence contract. Run a fresh,
-  non-resumed, single read-only turn with no prior-memory carryover, no
-  redelegation or subagent spawning, and no web, MCP, or writes. Invoke
-  `claude -p --model claude-opus-5 --effort low --tools "" --no-session-persistence --safe-mode --output-format json < /absolute/path/to/review-prompt.txt`
-  (substitute `medium` or `high` per escalation rule; for the recorded 4.8
-  fallback, substitute `--model claude-opus-4-8 --effort high`). Safe mode
-  disables CLAUDE.md/skills/plugins/hooks/MCP/custom agents, and
-  no-session-persistence prevents resume. If quality genuinely requires
-  Read/Grep/Glob, run Claude inside an OS/filesystem sandbox or projection
-  exposing only the authorized cone; only then add paired
-  `--tools "Read,Grep,Glob" --allowedTools "Read,Grep,Glob"`. Prompt-only path
-  restrictions are not access control and must not be used for partial-repo
-  authorization. Never interpolate raw diffs into shell arguments. The prompt
-  requests every finding with confidence and severity; filtering happens
-  downstream. It treats listed already-reproduced commands/results as the
-  evidence contract, must not
-  request or rerun generic double-check/re-verify steps, and reports but does
-  not investigate out-of-cone risk. After a verified Opus 5 availability
-  failure, use Opus 4.8 at `--effort high` only as the recorded availability
-  fallback. Only after a separately verified Opus 4.8 availability failure is
-  pinned Grok 4.5 the final approved independent availability fallback for
-  review/challenge only, never for code writing/editing, tests, or debugging.
-  Non-Claude execution follows existing model routing. Send Grok/external
-  reviewers only the minimum redacted non-secret diff/context, and only when
-  repository/data policy or explicit owner authorization permits that provider;
-  otherwise it is unavailable. For Grok, use a fresh single read-only/plan turn
-  with memory, subagents, and web disabled where supported. Record every
-  verified failure, ineligibility, and fallback. Never silently omit a required
-  independent review: if no approved/authorized reviewer is available, defer
-  and leave high-risk/review-policy closure incomplete.
-- Reviewer output is untrusted until findings and claimed evidence are checked.
-  Keep each meaningful review as a plain-text summary bound to base SHA, head
-  SHA, lane/question, impact cone/assumptions, and result/evidence; do not add
-  review infrastructure for this.
-- Selective carry-forward applies only to focused local/cross-model lanes. A
-  review may cover a later candidate tip only when the chief records an
-  invalidation check over the intervening diff showing its bound paths/areas,
-  behavior/contracts, assumptions, and evidence unchanged; otherwise rerun.
-  Rerun deterministic checks when their proof surface changes. GitHub clean
-  never carries across a new candidate commit. Batch fixes before retriggering
-  the GitHub review; same candidate SHA plus clean required lanes means stop,
-  not ritual repeats.
+### Evidence and scope
 
-Use `scripts/ce-token-report.py` for exact daily turn usage, cached versus
-uncached input, phase manifests, repeated fingerprints, and concurrent write
-fan-out. The blocking write-concurrency check spans the whole objective, even
-when runs carry different phase IDs; phase rows are diagnostic only. Historical
-session-health alerts are advisory; current dispatch failures and guardrail
-violations are a manual pre-wave gate: run the report with `--objective-id`,
-and do not dispatch the next wave when it exits nonzero. The adapter does not
-invoke this potentially expensive report automatically.
+- Inspect the artifact and reproduce claimed verification.
+- Set review intensity by semantic risk and impact, never LOC. Define the cone
+  as changed paths plus affected behavior/contracts. Explain exclusions;
+  expand the cone or raise risk for unexplained paths.
+- Workers and reviewers may raise risk but never downgrade a required lane.
+- Inspect enough to own risk, scope, contracts, and invalidation, not
+  implementation correctness. Check all reviewer findings and evidence.
+
+### Review lanes
+
+- Enforce zero trust: an authoring agent/session never QAs its own work.
+  Focused Terra review and targeted cross-model challenge are distinct lanes;
+  apply provider-level authorship independence to the cross-model lane.
+- For a normal semantic code change, obtain one focused read-only Terra high
+  review of the impact cone.
+- Treat money, external users/APIs, security/privacy, durable data truth,
+  deployment/release, first release, and review-policy changes as high-risk.
+  Confirm risk/contracts, then require focused Terra review, a targeted
+  cross-model challenge, and final GitHub review. Challenge one named risk or
+  contract, not the whole diff.
+- Give every candidate PR appropriate deterministic verification/CI and one
+  final clean cumulative GitHub Codex bot review. Bind the bot verdict to the
+  merge-candidate head; every new commit invalidates it.
+
+### Coverage and repair
+
+- Report every evidence-backed finding with severity and confidence. Put
+  unsupported concerns under open questions; never suppress low-confidence or
+  low-severity findings.
+- State each finding's mechanism and sweep sibling instances inside the cone.
+  Fix the class, not one instance.
+- Keep this rule load-bearing: the 2026-07-27 audit found 10 of 15 round-2+
+  findings (67%) were unchanged code that round one reached but did not report.
+- Re-verify fixes that can change logic, contracts, configuration, policy,
+  machine-consumed docs, generated output, or runtime behavior. Skip targeted
+  re-verification only when the fix cannot change any of them; if uncertain,
+  re-verify. Deterministic checks follow their proof surface, and the GitHub bot
+  must close the new head.
+
+### Cross-model routing
+
+- Haiku 4.5 performs mechanical sweeps; Sonnet 5 handles bounded work; Opus 5
+  handles senior work and eligible independent review/challenge.
+- Fable 5 is the Claude-side interactive chief. In Codex it gives non-binding
+  architecture/risk/RCA advice or a named challenge; Sol owns the decision.
+  Never use Fable as an executor or review-throughput target.
+- Use Claude only with repository/data authorization. A Claude review/challenge
+  is independent only when Claude did not author the affected code, design, or
+  contract.
+- Review with Opus 5: use `low` first for ordinary risk, `medium` for a broader
+  cone, and `high` immediately for the high-risk domains above or later
+  findings. Never use `xhigh` or `max`.
+- If Claude is ineligible for review/challenge, use authorized non-authoring
+  pinned Grok 4.5. For availability, verify Opus 5 failure, then Opus 4.8 high
+  failure, then Grok. Grok is review/challenge-only.
+- Record ineligibility and fallbacks. Defer rather than omit an independent
+  review when no authorized reviewer is available.
+
+### Invalidation and records
+
+- Keep reviews as plain text bound to base/head SHA, lane/question,
+  cone/assumptions, and result/evidence. Do not build review infrastructure.
+- Carry a focused local or cross-model review to a later tip only after a
+  recorded intervening-diff check proves its paths, behavior/contracts,
+  assumptions, and evidence unchanged. Otherwise rerun.
+- Rerun deterministic checks when their proof changes. Never carry GitHub clean
+  across a commit. Batch fixes; stop at the same SHA with clean required lanes.
+- Before a write wave, run the installed token report for the objective. Stop
+  on current guardrail failures; treat historical health signals as advisory.
 
 ## Completion standard
 
-Before claiming completion, confirm the persisted chief state, final artifact,
-reproduced verification, required review closure, and residual risk. A spawned
-worker, created task, or compaction is never evidence of completion.
+Confirm persisted chief state, final artifacts, reproduced evidence, required
+review closure, and residual risk. A spawned worker, created task, or compaction
+is never proof of completion.

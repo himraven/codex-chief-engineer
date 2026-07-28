@@ -32,6 +32,42 @@ def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str
     )
 
 
+class PackagingPolicyTests(unittest.TestCase):
+    def test_installer_excludes_adapter_only_native_roles(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            codex_home = Path(directory) / "codex"
+            environment = os.environ.copy()
+            environment["CODEX_HOME"] = str(codex_home)
+
+            result = run(["bash", str(REPO_ROOT / "install.sh")], env=environment)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            installed_agents = {
+                path.name for path in (codex_home / "agents").glob("*.toml")
+            }
+            self.assertEqual(
+                installed_agents,
+                {"ce-mechanic.toml", "ce-worker.toml", "ce-senior.toml"},
+            )
+            self.assertNotIn("ce-scout.toml", installed_agents)
+            self.assertNotIn("ce-reviewer.toml", installed_agents)
+
+    def test_installer_rejects_stale_adapter_only_native_roles(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            codex_home = Path(directory) / "codex"
+            agents = codex_home / "agents"
+            agents.mkdir(parents=True)
+            (agents / "ce-reviewer.toml").write_text("stale\n", encoding="utf-8")
+            environment = os.environ.copy()
+            environment["CODEX_HOME"] = str(codex_home)
+
+            result = run(["bash", str(REPO_ROOT / "install.sh")], env=environment)
+
+            self.assertEqual(result.returncode, 69)
+            self.assertIn("adapter-only native agent already present", result.stderr)
+            self.assertFalse((codex_home / "skills/chief-engineer").exists())
+
+
 class TokenReportTests(unittest.TestCase):
     def test_day_bounds_localize_both_midnights_across_dst(self) -> None:
         if not hasattr(time, "tzset"):
