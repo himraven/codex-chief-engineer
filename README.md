@@ -15,6 +15,8 @@ Terra execute bounded briefs; their output remains untrusted until verified.
 
 The skill reduces waste through context isolation and right-sized execution,
 not shorter briefs, weaker review, or lower reasoning on chief decisions.
+The installable `SKILL.md` keeps that doctrine compact; invocation and
+substrate mechanics live in an operations reference loaded only when needed.
 
 ```mermaid
 flowchart TB
@@ -42,6 +44,7 @@ flowchart TB
 | Review intensity | Semantic risk and impact, never LOC |
 | Normal semantic code | Focused read-only Terra high review by default (recorded reviewer fallback only after verified availability failure) |
 | High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
+| Review repair | Re-verify logic, contract, and configuration fixes; pure wording/comment/doc-text fixes skip targeted re-verification and close with the GitHub bot on the new head |
 | PR closure | Appropriate deterministic verification/CI and one clean cumulative GitHub Codex bot review whose recorded head SHA equals the merge-candidate tip |
 | Approval | Write workers require an explicit, brief-bound approval record |
 | Repository boundary | Every adapter role is limited to a local allowlist of Git roots |
@@ -162,6 +165,10 @@ The brief ceiling is a runaway guardrail, not a quality target. Keep every
 decision and contract the executor needs; remove copied conversation and raw
 logs. If a brief contains multiple objectives, reslice it.
 
+For dispatch flags, review invocation details, and usage-report mechanics, read
+[`references/operations.md`](skill/chief-engineer/references/operations.md).
+The adapter's `--help` remains authoritative for its interface.
+
 ## Model routing
 
 The bundled defaults use the GPT-5.6 family available to the original setup.
@@ -191,6 +198,11 @@ merge-candidate tip. Any new candidate commit invalidates the prior GitHub
 clean. Normal semantic code changes also receive one focused, read-only Terra
 high review by default; the recorded reviewer fallback applies only after
 verified availability failure.
+
+After a review fix, targeted re-verification is required when logic, contracts,
+or configuration values change. Pure wording, comments, or doc text with no
+executable semantics skip targeted re-verification; deterministic checks still
+follow their proof surface, and the final GitHub clean must bind the new head.
 
 High-risk changes—money, external user behavior or API, security/privacy,
 durable-data truth, deployment/release, first release, and review-policy
@@ -305,7 +317,7 @@ on failure.
 ## Repository layout
 
 ```text
-skill/chief-engineer/   Installable Codex skill, references, and adapters
+skill/chief-engineer/   Installable doctrine, on-demand operations, and adapters
 agents/                 Optional custom-agent TOML definitions
 install.sh              Non-overwriting installer
 ```
