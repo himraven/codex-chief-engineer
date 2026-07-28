@@ -22,8 +22,9 @@ manifests.
 - Repository fingerprints exclude ignored files. If ignored runtime evidence
   matters, bind its narrow digest in the brief. Never hash dependency, build,
   cache, secret, or whole runtime trees.
-- `plutil -extract KEYPATH FMT FILE` writes back to `FILE` when `-o` is omitted.
-  For inspection use `plutil -p` or pass `-o -`.
+- `plutil -extract KEYPATH FMT FILE` is read-only by default and writes to
+  stdout; `-o PATH` selects an explicit output file. Use `raw`, `xml1`, or
+  `json` for machine consumption; `-p` is human-readable but unstable.
 
 ## Claude review or challenge
 
