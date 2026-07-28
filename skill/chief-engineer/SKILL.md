@@ -194,14 +194,15 @@ authority. Escalate quality failures; never hide them with another-model retry.
 - Fable 5 is the Claude-side interactive chief. In Codex it gives non-binding
   architecture/risk/RCA advice or a named challenge; Sol owns the decision.
   Never use Fable as an executor or review-throughput target.
-- Use Claude only with repository/data authorization and only when it did not
-  author the affected code, design, or contract.
+- Use Claude only with repository/data authorization. A Claude review/challenge
+  is independent only when Claude did not author the affected code, design, or
+  contract.
 - Review with Opus 5: use `low` first for ordinary risk, `medium` for a broader
   cone, and `high` immediately for the high-risk domains above or later
   findings. Never use `xhigh` or `max`.
-- If Claude is ineligible, use authorized non-authoring pinned Grok 4.5. For
-  availability, verify Opus 5 failure, then Opus 4.8 high failure, then Grok.
-  Grok is review/challenge-only.
+- If Claude is ineligible for review/challenge, use authorized non-authoring
+  pinned Grok 4.5. For availability, verify Opus 5 failure, then Opus 4.8 high
+  failure, then Grok. Grok is review/challenge-only.
 - Record ineligibility and fallbacks. Defer rather than omit an independent
   review when no authorized reviewer is available.
 
