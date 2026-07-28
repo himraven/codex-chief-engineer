@@ -172,8 +172,8 @@ The adapter's `--help` remains authoritative for its interface.
 ## Model routing
 
 The bundled defaults use the GPT-5.6 family available to the original setup.
-Edit both the skill table and `agents/` TOML files if your Codex account exposes
-different model IDs.
+Edit the skill table and matching write-capable `agents/` TOML files if your
+Codex account exposes different model IDs.
 
 | Tier | Role | Default model / effort |
 |---|---|---|
@@ -183,12 +183,16 @@ different model IDs.
 | Review | Read-only code review | Terra / high |
 | T3 | Architecture and integration | Sol / xhigh |
 
-The `agents/` directory provides optional custom-agent definitions. Native
-ephemeral agents are suitable for write-capable roles when the active surface
-proves the requested role, model, reasoning effort, sandbox, and fresh-context
-behavior. Scouts and reviewers always use the adapter because their read-only
-boundary must be enforced by a real sandbox. The direct dispatch adapter is the
-portable fallback for other roles when any required property is not observable.
+The `agents/` directory provides optional native definitions only for mechanic,
+worker, and senior write roles. Native ephemeral agents are suitable for those
+roles when the active surface proves the requested role, model, reasoning
+effort, sandbox, and fresh-context behavior. Scouts and reviewers are not
+shipped as native definitions and always use the adapter because their
+read-only boundary must be enforced by a real sandbox. The direct dispatch
+adapter is the portable fallback for other roles when any required property is
+not observable. An older installation that still contains `ce-scout.toml` or
+`ce-reviewer.toml` under `CODEX_HOME/agents` must move those files out before
+installing this policy; the installer fails closed while either remains.
 
 ## Review lifecycle
 
@@ -320,7 +324,7 @@ on failure.
 
 ```text
 skill/chief-engineer/   Installable doctrine, on-demand operations, and adapters
-agents/                 Optional custom-agent TOML definitions
+agents/                 Optional write-capable custom-agent TOML definitions
 install.sh              Non-overwriting installer
 ```
 
