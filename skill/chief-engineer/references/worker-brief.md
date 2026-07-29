@@ -28,7 +28,10 @@ One sentence describing the exact outcome and why this slice exists.
 - Owned paths:
 - Forbidden paths:
 - Risk tier and red-line boundary:
-- Network and setup boundary:
+- Network and setup boundary: <none | pre-warmed cache at PATH | --network "<reason>" authorized>
+  (read roles needing temp files: dispatch with --scratch-tmp; see operations.md
+  "Sandbox boundaries" — SSH/GitHub facts are pre-staged by the chief, never
+  fetched by the worker)
 - Other active workstreams and convergence contract:
 
 ## Work and stop condition

@@ -218,6 +218,27 @@ authority. Escalate quality failures; never hide them with another-model retry.
 - Before a write wave, run the installed token report for the objective. Stop
   on current guardrail failures; treat historical health signals as advisory.
 
+## Calibration — 2026-07-28 ledger audit (85 ledgers, 1248 real dispatches)
+
+- This system is primarily a **review orchestrator**: 52% of real dispatches are
+  reviewer lanes. Every doctrine save on record came from review independence,
+  red-line bot closure, fail-closed gates, or verify-before-accept — none from
+  model selection. Optimize rounds and cones, never gates.
+- Escalations are driven by **sandbox/tool boundaries** (no network for npm,
+  worktree metadata writes, SSH denied), not model capability. Prefer fixing the
+  boundary so the worker can finish over chief self-execution — the chief is the
+  most expensive context and its own work gets one less review. Lateral model
+  swaps on failure have zero precedent in 1248 dispatches; keep it that way.
+- One objective, one chief: judgment-heavy/novel/cross-module arcs → the Claude
+  chief; deterministic/maintenance/well-specified arcs → Sol. The other side
+  supplies workers and reviewers only — twin chiefs on one arc is the twin
+  structure's only real waste mode.
+- **Doctrine freeze (scar-driven-only)**: a new rule requires a real scar — an
+  incident, a caught P0/P1, or measured waste. Deletions, moves, and compressions
+  need the same rigor as additions (grep consumers; governance tier follows moved
+  content; compressing history promotes stale claims to current ones). Next
+  audit: next model generation or ~quarterly. No standing token telemetry.
+
 ## Completion standard
 
 Confirm persisted chief state, final artifacts, reproduced evidence, required

@@ -1014,5 +1014,101 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
             self.assertEqual(failed_manifest["exit_status"], 75)
 
 
+class BoundaryFlagTests(unittest.TestCase):
+    """`--scratch-tmp` and `--network` are permission knobs; pin their guards.
+
+    Both exist because escalations were dominated by sandbox boundaries rather
+    than model capability, and the default recovery — the chief doing the work
+    itself — is the most expensive one. A knob that widens what a dispatched
+    worker may do has to fail closed on misuse, so these tests pin the guards
+    rather than the happy path.
+    """
+
+    def _dispatch(self, role: str, *extra: str) -> subprocess.CompletedProcess[str]:
+        """Invoke the adapter far enough to hit the role/flag guards.
+
+        Those guards run before the brief, approval, and repository checks, so
+        the fixture deliberately does not build a repository: reaching a later
+        error would mean a guard failed to fire.
+        """
+        with tempfile.TemporaryDirectory() as raw_root:
+            root = Path(raw_root)
+            brief = root / "brief.md"
+            brief.write_text("# Objective\nProbe.\n", encoding="utf-8")
+            return run(
+                [
+                    "bash",
+                    str(DISPATCH),
+                    "--role",
+                    role,
+                    "--objective-id",
+                    "OBJ-1",
+                    "--phase-id",
+                    "P1",
+                    "--workstream-id",
+                    "WS-1",
+                    "--cwd",
+                    str(root),
+                    "--brief",
+                    str(brief),
+                    "--result-dir",
+                    str(root / "results"),
+                    *extra,
+                ]
+            )
+
+    def test_scratch_tmp_rejects_repo_write_roles(self) -> None:
+        for role in ("mechanic", "worker", "senior"):
+            with self.subTest(role=role):
+                result = self._dispatch(role, "--scratch-tmp")
+                self.assertEqual(result.returncode, 64)
+                self.assertIn("--scratch-tmp is for read roles", result.stderr)
+
+    def test_network_rejects_read_roles(self) -> None:
+        """Read roles stay fail-closed: the chief pre-stages refs and caches."""
+        for role in ("scout", "reviewer"):
+            with self.subTest(role=role):
+                result = self._dispatch(role, "--network", "install dependencies")
+                self.assertEqual(result.returncode, 64)
+                self.assertIn("--network is for repo-write roles", result.stderr)
+
+    def test_network_requires_a_recorded_reason(self) -> None:
+        result = self._dispatch("worker", "--network", "   ")
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("non-whitespace reason", result.stderr)
+
+    def test_scratch_tmp_does_not_bypass_the_write_approval_gate(self) -> None:
+        """Approval keys off the role, not the sandbox string.
+
+        `--scratch-tmp` raises a read role's sandbox to workspace-write for a
+        scratch directory outside the repository. That must not be mistaken for
+        repository write capability, and conversely a write role must still
+        present an approval record.
+        """
+        result = self._dispatch("mechanic")
+        self.assertEqual(result.returncode, 71)
+        self.assertIn("Write roles require --approval-file", result.stderr)
+
+    def test_network_permission_is_pinned_on_every_dispatch(self) -> None:
+        """The flag must be the only authority on network access.
+
+        Passing the override only when the flag is set would let a future
+        global `[sandbox_workspace_write] network_access = true` grant network
+        to every unflagged run. The override is therefore unconditional and
+        carries the flag's value.
+        """
+        source = DISPATCH.read_text(encoding="utf-8")
+        self.assertIn(
+            "sandbox_workspace_write.network_access=$network_access",
+            source,
+        )
+        self.assertNotIn(
+            'sandbox_workspace_write.network_access=true"',
+            source.replace(
+                "sandbox_workspace_write.network_access=$network_access", ""
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

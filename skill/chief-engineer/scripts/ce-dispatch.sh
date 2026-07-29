@@ -7,13 +7,31 @@ usage() {
 Usage: ce-dispatch.sh --role <scout|mechanic|worker|senior|reviewer> \
   --objective-id <id> --phase-id <id> --workstream-id <id> \
   --cwd <git-repository> --brief <brief.md> --result-dir <directory> \
-  [--approval-file <approval.md>] [--fallback] [--repeat-reason <reason>]
+  [--approval-file <approval.md>] [--fallback] [--repeat-reason <reason>] \
+  [--scratch-tmp] [--network <reason>]
 
 The launcher refuses Sol workers, broad or unapproved working directories, and
 oversized briefs. It also refuses a previously successful unchanged input
 unless the caller records why new evidence requires a repeat. It runs an
 isolated `codex exec --ephemeral` process with a pinned model, reasoning effort,
 and sandbox.
+
+Boundary flags (2026-07-29; evidence: 45 ledger incidents, see operations.md):
+  --scratch-tmp   scout/reviewer only. Runs workspace-write with the codex cwd
+                  pointed at a fresh scratch dir under the result dir, so pytest
+                  temp files work while the repository stays unwritable (it is
+                  simply not a writable root; reads are machine-wide in every
+                  sandbox mode). The post-run repo fingerprint must be unchanged
+                  or the run exits 76. No write approval record is required —
+                  the run has no repository write capability.
+  --network <reason>  mechanic/worker/senior only. Adds
+                  sandbox_workspace_write.network_access=true for THIS run so
+                  dependency installs (npm/PyPI DNS) can finish. Blast radius is
+                  ALL outbound traffic (no domain scoping exists in codex
+                  0.144.x) — the reason string is mandatory and recorded in the
+                  manifest. Repository .git metadata stays unwritable, so git
+                  push remains structurally blocked (git ops belong to the
+                  dispatcher).
 USAGE
 }
 
@@ -114,6 +132,10 @@ approval_file=""
 repeat_reason=""
 repeat_reason_supplied=false
 fallback=false
+scratch_tmp=false
+network_access=false
+network_reason=""
+network_supplied=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -126,6 +148,8 @@ while [[ $# -gt 0 ]]; do
     --result-dir) result_dir="${2:-}"; shift 2 ;;
     --approval-file) approval_file="${2:-}"; shift 2 ;;
     --repeat-reason) repeat_reason="${2:-}"; repeat_reason_supplied=true; shift 2 ;;
+    --scratch-tmp) scratch_tmp=true; shift ;;
+    --network) network_reason="${2:-}"; network_supplied=true; shift 2 ;;
     --fallback) fallback=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 64 ;;
@@ -185,6 +209,39 @@ if [[ "$fallback" == true ]]; then
   esac
 fi
 
+# Repo-write capability is a property of the ROLE, not of the sandbox string:
+# a --scratch-tmp scout runs workspace-write yet can never write the repository
+# (the repo is not among its writable roots). Approval records, the linked-
+# worktree requirement, and the write lock all key off this, not off $sandbox.
+repo_write=false
+case "$role" in
+  mechanic|worker|senior) repo_write=true ;;
+esac
+
+if [[ "$scratch_tmp" == true ]]; then
+  if [[ "$repo_write" == true ]]; then
+    printf -- '--scratch-tmp is for read roles (scout/reviewer); write roles already have a writable cwd and /tmp.\n' >&2
+    exit 64
+  fi
+  sandbox="workspace-write"
+fi
+
+if [[ "$network_supplied" == true ]]; then
+  if [[ "$repo_write" != true ]]; then
+    printf -- '--network is for repo-write roles (mechanic/worker/senior). Read roles stay fail-closed:\n' >&2
+    printf 'the chief pre-stages refs/caches or gathers remote facts on its own authorized surface.\n' >&2
+    exit 64
+  fi
+  network_reason=$(
+    python3 -c 'import sys; print(sys.argv[1].strip(), end="")' "$network_reason"
+  )
+  if [[ -z "$network_reason" ]]; then
+    printf -- '--network requires a non-whitespace reason; it is recorded in the manifest.\n' >&2
+    exit 64
+  fi
+  network_access=true
+fi
+
 [[ -f "$brief" ]] || { printf 'Brief does not exist: %s\n' "$brief" >&2; exit 66; }
 brief_bytes=$(wc -c < "$brief" | tr -d '[:space:]')
 max_brief_bytes="${CE_MAX_BRIEF_BYTES:-48000}"
@@ -197,7 +254,7 @@ brief_sha=$(sha256_file "$brief")
 
 approval_sha=""
 approved_by=""
-if [[ "$sandbox" == "workspace-write" ]]; then
+if [[ "$repo_write" == true ]]; then
   if [[ -z "$approval_file" || ! -f "$approval_file" ]]; then
     printf 'Write roles require --approval-file with a matching approval record.\n' >&2
     exit 71
@@ -291,20 +348,26 @@ head_sha=$(git -C "$repo_root" rev-parse --verify HEAD 2>/dev/null || printf 'UN
 initial_base_tree=$(git_base_tree "$repo_root")
 initial_repo_fingerprint=$(repo_fingerprint "$repo_root")
 input_fingerprint=$(
-  printf '%s\n' \
-    "repo-root:$repo_root" \
-    "cwd:$cwd" \
-    "$objective_id" \
-    "$workstream_id" \
-    "$role" \
-    "$brief_sha" \
-    "$head_sha" \
-    "$initial_repo_fingerprint" |
-    sha256_stream
+  {
+    printf '%s\n' \
+      "repo-root:$repo_root" \
+      "cwd:$cwd" \
+      "$objective_id" \
+      "$workstream_id" \
+      "$role" \
+      "$brief_sha" \
+      "$head_sha" \
+      "$initial_repo_fingerprint"
+    # Appended only when set, so pre-existing fingerprints (and the repeat-
+    # guard index built from them) stay valid for flagless runs.
+    [[ "$scratch_tmp" == true ]] && printf 'scratch-tmp:true\n'
+    [[ "$network_access" == true ]] && printf 'network:true\n'
+    true
+  } | sha256_stream
 )
 
 write_lock_dir=""
-if [[ "$sandbox" == "workspace-write" ]]; then
+if [[ "$repo_write" == true ]]; then
   if [[ ! -f "$repo_root/.git" || "$repo_root" != "$allowed_root/.worktrees/"* ]]; then
     printf 'Write roles require a dedicated linked worktree under %s/.worktrees/.\n' "$allowed_root" >&2
     exit 72
@@ -340,6 +403,13 @@ index_dir="$run_home/$(date +%F)"
 index_manifest="$index_dir/${run_id}.manifest.json"
 mkdir -p "$index_dir"
 
+codex_cwd="$cwd"
+scratch_dir=""
+if [[ "$scratch_tmp" == true ]]; then
+  scratch_dir="$result_dir/${run_id}.scratch"
+  codex_cwd="$scratch_dir"
+fi
+
 duplicate_manifest=""
 if [[ -d "$run_home" ]]; then
   while IFS= read -r prior_manifest; do
@@ -357,6 +427,31 @@ if [[ -n "$duplicate_manifest" && -z "$repeat_reason" ]]; then
   exit 74
 fi
 
+# --scratch-tmp: codex runs FROM a fresh scratch dir (under the result dir,
+# which is already required to be outside the repository), so its writable
+# roots are scratch + $TMPDIR + /tmp — never the repo. Reads are machine-wide
+# in every sandbox mode, so the brief reaches the repo via absolute paths.
+# Created after the duplicate guard so a refused repeat leaves no orphan dir
+# (Terra P3, 2026-07-29).
+if [[ "$scratch_tmp" == true ]]; then
+  mkdir -p "$scratch_dir"
+fi
+
+# Always pass exactly one explicit network override so the flag is the single
+# authority: without this, a future global `[sandbox_workspace_write]
+# network_access = true` in config.toml would silently grant network to every
+# unflagged write run and every scratch run (Terra P1, 2026-07-29).
+codex_overrides=(
+  -c "model_reasoning_effort=\"$effort\""
+  -c "sandbox_workspace_write.network_access=$network_access"
+)
+if [[ "$scratch_tmp" == true ]]; then
+  # The scratch cwd is deliberately not a git repository; codex refuses
+  # untrusted non-repo directories unless told to skip the check. Known class:
+  # dispatching codex into any non-git directory needs this flag.
+  codex_overrides+=( --skip-git-repo-check )
+fi
+
 start_epoch=$(date +%s)
 set +e
 {
@@ -366,14 +461,20 @@ set +e
   printf '%s\n' "You have a tool budget of ${tool_budget}; if evidence is insufficient at the"
   printf '%s\n' 'limit, stop and report the smallest remaining uncertainty.'
   printf '%s\n' "Return only the brief's requested structured result."
+  if [[ "$scratch_tmp" == true ]]; then
+    printf '%s\n' ''
+    printf '%s\n' "Your working directory (${codex_cwd}) is a SCRATCH area for temporary files."
+    printf '%s\n' "The target repository is at ${cwd} — read it via absolute paths."
+    printf '%s\n' 'The repository is NOT writable in this run; do not attempt to modify it.'
+  fi
   printf '%s\n' ''
   printf '%s\n' '--- BEGIN STANDALONE BRIEF ---'
   cat "$brief"
   printf '%s\n' '--- END STANDALONE BRIEF ---'
 } | codex -a never exec --ephemeral --json \
-  -C "$cwd" \
+  -C "$codex_cwd" \
   -m "$model" \
-  -c "model_reasoning_effort=\"$effort\"" \
+  "${codex_overrides[@]}" \
   -s "$sandbox" \
   -o "$final" \
   - > "$events"
@@ -418,6 +519,13 @@ elif (( final_bytes > final_budget_bytes )); then
   gate_status=73
 elif [[ "$fingerprint_state" != "complete" ]]; then
   gate_status=75
+elif [[ "$scratch_tmp" == true && "$final_repo_fingerprint" != "$initial_repo_fingerprint" ]]; then
+  # A scratch-tmp run has no repository write capability by construction, so a
+  # changed repo fingerprint means either an external writer touched the repo
+  # mid-run (investigate: multi-session collision) or the isolation failed.
+  # Fail closed either way; never report such a run as clean.
+  fingerprint_state="repo_mutated_during_scratch_run"
+  gate_status=76
 fi
 
 manifest_tmp=$(mktemp "$result_dir/.${run_id}.manifest.XXXXXX")
@@ -432,6 +540,9 @@ jq -n \
   --arg final_diff_sha256 "$final_diff_sha256" --arg fingerprint_state "$fingerprint_state" \
   --arg repeat_reason "$repeat_reason" \
   --arg duplicate_manifest "$duplicate_manifest" \
+  --argjson scratch_tmp "$scratch_tmp" --arg scratch_dir "$scratch_dir" \
+  --arg codex_cwd "$codex_cwd" \
+  --argjson network_access "$network_access" --arg network_reason "$network_reason" \
   --arg events "$events" --arg final "$final" --arg index_manifest "$index_manifest" \
   --arg approval_file "$approval_file" --arg approval_sha256 "$approval_sha" --arg approved_by "$approved_by" \
   --arg model_provenance "$model_provenance" --argjson observed_model "$observed_model" \
@@ -444,7 +555,9 @@ jq -n \
     workstream_id: $workstream_id, role: $role,
     requested_model: $requested_model, routing_mode: $routing_mode,
     observed_model: $observed_model, reasoning_effort: $effort,
-    sandbox: $sandbox, cwd: $cwd, repo_root: $repo_root,
+    sandbox: $sandbox, cwd: $cwd, codex_cwd: $codex_cwd, repo_root: $repo_root,
+    scratch_tmp: $scratch_tmp, scratch_dir: $scratch_dir,
+    network_access: $network_access, network_reason: $network_reason,
     brief: $brief, brief_sha256: $brief_sha256, head_sha: $head_sha,
     initial_repo_fingerprint: $initial_repo_fingerprint,
     input_fingerprint: $input_fingerprint,

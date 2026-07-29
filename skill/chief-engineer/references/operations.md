@@ -26,6 +26,39 @@ manifests.
   stdout; `-o PATH` selects an explicit output file. Use `raw`, `xml1`, or
   `json` for machine consumption; `-p` is human-readable but unstable.
 
+## Sandbox boundaries (2026-07-29 policy; evidence = 45 ledger incidents)
+
+Four boundary classes, four different answers. Do not improvise others.
+
+1. **Writable temp for read roles** (largest class, ~18 dispatches: pytest
+   `tmp_path`, heredocs, Vite temp) → dispatch scout/reviewer with
+   `--scratch-tmp`. The run becomes workspace-write, but codex's cwd is a fresh
+   scratch dir under the result dir — the repository is not a writable root, so
+   it stays read-only at the kernel while temp works. The adapter fails the run
+   (exit 76) if the repo fingerprint changed. No write approval record needed.
+2. **Package-registry network for write roles** (npm/PyPI DNS) → add
+   `--network "<reason>"` to a mechanic/worker/senior dispatch. This sets
+   `sandbox_workspace_write.network_access=true` for that run only. Radius is
+   ALL outbound (codex 0.144.x has no domain scoping; `network_proxy` is
+   experimental/off; `allow_unix_sockets` parses but is INERT — do not use).
+   Prefer pre-warmed caches/`node_modules` when deps are already pinned; the
+   flag is for genuine dependency-closure work. Reason lands in the manifest.
+3. **Git metadata writes outside cwd** (linked-worktree `index.lock`,
+   `FETCH_HEAD`, rebase state) → **intentional; do not open.** Three ledgers
+   independently converged on the doctrine: workers edit files, git operations
+   belong to the dispatcher. With `--network` this also keeps `git push`
+   structurally blocked.
+4. **SSH / GitHub from read roles** → **stays fail-closed by design** (scouts
+   returning UNKNOWN instead of inventing causes is praised behavior). The
+   chief pre-stages instead: `git fetch` + pin `refs/ce/<name>` refs locally,
+   pre-warm caches, or gather remote facts on the chief's own authorized
+   surface, then dispatch offline work against the staged state.
+
+Standing exposure to remember when writing briefs: codex's Seatbelt policy
+allows **machine-wide reads in every mode** (`(allow file-read*)`) — `~/.ssh`
+private keys and any local secret are readable by every worker. Do not paste
+secret paths into briefs, and treat "the sandbox will hide it" as false.
+
 ## Claude review or challenge
 
 Default to a fresh, tool-less, non-persistent turn:
