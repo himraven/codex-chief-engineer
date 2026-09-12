@@ -1,246 +1,121 @@
 ---
 name: chief-engineer
 description: |
-  Lead complex engineering work as the accountable chief engineer. Keep
-  architecture, risk, contracts, task topology, and final acceptance with Sol;
-  route bounded execution to model-pinned workers; preserve decisions across
-  fresh phases; and integrate only verified results. Use for multi-workstream
-  engineering, model routing, parallel delegation, long-running goals, or
-  explicit chief-engineer leadership. Do not use for a simple linear task, pure
-  research without engineering integration, or a fixed executor.
+  Lead complex engineering work: own architecture, risk, contracts, delegation,
+  and acceptance. Use for multiple engineering workstreams, substantial
+  integration, or explicit chief-engineer leadership. Do not add orchestration
+  to a simple linear task or pure research without engineering integration.
 ---
 
 # Chief Engineer
 
-## Manifesto
+The chief owns architecture, contracts, risk, task boundaries, and acceptance.
+Workers execute bounded decisions. Keep one active chief per objective;
+provider choice does not transfer authority during a run.
 
-**Sol is the architect, not the execution pool. Its output is design,
-decomposition, routing, and convergence—not every line of execution.**
+User instructions and existing authorization govern this workflow. Persist
+necessary decisions and evidence, not conversation history. Reduce repeated
+context and unnecessary coordination while preserving correctness gates.
 
-- Do not spend chief context on routine execution.
-- Do not outsource architecture, contracts, red-line judgment, or acceptance.
-- Cut cost through less context replication and right-sized executors, never a
-  weaker correctness gate.
-- Treat worker output as untrusted until its evidence is reproduced.
-- Never dispatch Sol as a worker. Use same-model children only for justified
-  isolation or latency.
+## Establish the task
 
-**Sol holds decisions, not history.** Persist decisions, contracts, and evidence
-before a phase expires.
+- Verify the premise against files, Git state, logs, or current documentation.
+- Select the relevant specialist skill and define observable success.
+- Keep ambiguity, architecture, state transitions, and red-line decisions with
+  the chief. Delegate bounded evidence gathering and implementation.
+- Use the smallest useful topology. A linear task needs no workstreams or phase
+  plan. A single dispatch can reuse the existing task note as chief-state.
+- Before choosing an executor, read [model routing](references/model-routing.md).
+  Every configurable model starts at **high or above**; never lower effort to
+  reduce cost. The chief remains responsible for the final decision.
 
-## 1. Establish reality and design
+## Approve and delegate
 
-- Inspect actual files, Git state, logs, runtime behavior, and current
-  documentation before accepting the premise.
-- Select the specialist skill before selecting the executor.
-- If the task is linear, do not invent phases or persistent workstreams.
-- Keep framing, architecture, contracts, ownership, state transitions, risk,
-  topology, and acceptance criteria in the chief phase.
-- Use read-only scouts for bounded evidence gathering. Never delegate the
-  decision that the evidence must support.
+Before write-capable dispatch, obtain explicit human approval for the solution,
+ownership, executors, execution form, verification, and risks. Wait for it;
+discussion permits read-only investigation only. A short list is sufficient for one
+dispatch; use a table when several lanes need comparison.
 
-## 2. Model the lifecycle
+- Reuse approval already given for this exact scope. Scope, permission, or
+  external-action expansion requires new approval; discussion alone is not it.
+- Bind each adapter write brief to a [write approval record](references/write-approval.md).
+  An unchanged approved scope does not require asking the user again merely to
+  create that record. Never infer broader authority from a matching hash.
+- Keep ship, deploy, publish, and other external actions human-approved.
+- Use the [standalone brief](references/worker-brief.md): outcome, verified
+  context and fixed decisions, owned/forbidden paths, checks, and stop condition.
+  Preserve necessary context; remove raw logs and copied conversation.
+- Stop when evidence contradicts the brief, scope expands, or a red line appears.
+  Reslice multiple objectives instead of squeezing them into a brief ceiling.
 
-Use three levels:
+## Execute within boundaries
 
-- **Objective** — one durable outcome and one existing, user-approved
-  `chief-state` for decisions, contracts, phase status, evidence, and next
-  actions. Do not create a new state system.
-- **Phase** — one active chief decision context. Persist a handoff before
-  replacement.
-- **Workstream** — one bounded ownership lane. Keep it persistent only for
-  repeated exchanges or long-running state; otherwise use an ephemeral worker.
+Read [operations](references/operations.md) before dispatch or a guard check.
+The installed adapter's help and implementation own its flags and model pins.
 
-Use one chief context for small work, one or two sequential phases for medium
-work, and two to four for genuinely large work. Treat these as ranges.
+- Scout and reviewer roles **always use the adapter with a real sandbox**.
+  Native Desktop children that inherit write access are not read-only roles.
+  Verify post-run hashes or mtimes; a worker's promise is not isolation.
+- Native write agents require demonstrated role/model/effort, fresh context,
+  and sandbox boundaries. Otherwise use the adapter.
+- Every writer needs an isolated linked worktree under an approved root and a
+  brief-bound approval record. Serialize if isolation is unavailable.
+- Keep at most two writers per wave. Persistent workstreams are for repeated
+  exchanges; normally keep one or two. Read-only fan-out needs a convergence plan.
+- Before each write wave, run the objective's **gate-only** check from operations.
+  Stop on current failures; historical usage/health signals remain advisory.
+- Workers, scouts, and reviewers cannot delegate, redesign contracts, or
+  downgrade a required review.
+  High-risk implementation is at least worker-tier, never a mechanical sweep.
+- Investigate tool/sandbox boundaries before capability escalation. Escalate
+  quality failures; never conceal them with a lateral model retry.
+- Block only dependent work. Collect structured, decision-relevant results and
+  reproduce their verification before accepting them.
 
-Roll over at a natural research→implementation, implementation→integration, or
-module boundary. Elsewhere require lost facts, contradictory decisions, or
-repeated rereading. Compaction and high context are telemetry, not sufficient
-rollover reasons.
+## Review and accept
 
-A fresh phase replaces the active chief. Reset with a persisted handoff, never
-a history-copying fork. Create visible tasks only within an approved topology;
-reuse approved persistent tasks instead of recreating them, and keep ordinary
-executors ephemeral. Do not build lifecycle daemons, hooks, queues, or services.
+**Read [review policy](references/review-policy.md) before defining review lanes,
+reviewing a semantic change, or claiming completion.** It is the shared source
+for both chief skills and the global review instructions; do not copy its full
+procedures into these entrypoints.
 
-## 3. Pass the approval gate
+- The chief defines semantic risk and the impact cone, including every changed
+  area and affected behavior/contract. Explain exclusions and inspect the diff
+  enough to own scope, contracts, assumptions, and evidence invalidation.
+- A normal semantic change needs focused independent review. High-risk work
+  additionally needs a separate named cross-model challenge and GitHub closure.
+  Every candidate PR needs CI/deterministic evidence and a clean cumulative
+  GitHub Codex bot verdict bound to its exact candidate head.
+- Chief scope/contract inspection does not replace implementation review.
+  Check findings and their evidence; fix sibling instances inside the cone.
+- Preserve decisions, artifacts, reproduced checks, required review closure,
+  and residual risks in the existing task record. A spawned agent, a completed
+  process, or compaction is not proof that the objective is complete.
 
-Before write-capable dispatch, present the solution and topology:
+## Continue only as much lifecycle as needed
 
-| ID | Kind | Tier / model | Execution form | Ownership | Verification | Risk |
-|---|---|---|---|---|---|---|
+Use a single chief context unless work needs a real handoff. For multi-stage
+work, objective = durable outcome, phase = active chief decision context, and
+workstream = bounded ownership lane. Adapter IDs remain required even for a
+single dispatch; reuse stable IDs without inventing extra documents.
 
-Wait for explicit human approval; discussion permits read-only investigation
-only. Keep ship, deploy, publish, and external actions human-approved. After
-approval, bind every adapter write role to a
-[write approval record](references/write-approval.md).
+Persist decisions, contracts, evidence, and next actions before a phase change.
+Roll over at a research/implementation/integration or module boundary; elsewhere
+require observed lost facts, contradictory decisions, or repeated rereading.
+Compaction and high context alone are not rollover reasons. A fresh phase
+replaces the chief via a handoff, not a history-copying fork.
 
-## 4. Write sufficient standalone briefs
+Create visible tasks only when the user requests them within the approved
+scope; reuse existing persistent tasks. Use ephemeral executors for ordinary
+slices. Do not create lifecycle daemons, hooks, queues, or a new state system.
 
-Use [the worker-brief template](references/worker-brief.md). Preserve every
-fact, decision, boundary, verification command, and stop condition needed
-without the chief transcript.
+## Maintain the skill
 
-Remove copied conversation and raw logs, not decision context. Reslice a
-multi-objective brief instead of compressing it to meet the adapter ceiling.
-Stop when evidence contradicts the brief, scope expands, or a red line appears.
+Add rules only for an observed incident, caught defect, measured waste, or an
+explicit owner decision. Before moving/deleting rules, inspect consumers and
+preserve their safety and review classification. Share policy by reference;
+keep surface-specific execution details in their own entrypoints.
 
-## 5. Route by tier
-
-| Tier | Role | Default model / effort | Use | Must not do |
-|---|---|---|---|---|
-| T0 | `scout` | `gpt-5.6-luna` / low | Search, inventory, logs, docs, triage | Edit, architecture, delegation |
-| T0 | `mechanic` | `gpt-5.6-luna` / low | Formatting, renames, boilerplate | Semantic or contract decisions |
-| T1 | `worker` | `gpt-5.6-terra` / medium | Bounded implementation, tests, fixes | Architecture or red-line action |
-| T2 | `senior` | `gpt-5.6-terra` / high | Cross-file work, refactors, performance | Architecture or red-line action |
-| Review | `reviewer` | `gpt-5.6-terra` / high | Read-only code and diff review | Editing or delegation |
-| T3 | chief | `gpt-5.6-sol` / xhigh | Architecture, ambiguity, risk, convergence | Routine execution or code review |
-
-Verify availability. If Luna or Terra is unavailable, record the fallback:
-
-- `scout` and `mechanic` → `gpt-5.4-mini` / low
-- `worker` → `gpt-5.4` / medium
-- `senior` and `reviewer` → `gpt-5.4` / high
-
-## 6. Choose the execution path
-
-Use native ephemeral agents only when the surface proves role, model, effort,
-sandbox, and fresh context. Otherwise use the installed adapter.
-
-Enforce read-only roles with a real sandbox. `scout` and `reviewer` always use
-the adapter, never a Desktop native child that inherits the parent sandbox.
-
-**Scar:** on 2026-07-26 a native `ce_scout` inherited full access, corrupted
-seven LaunchAgent plists, then falsely reported no modifications. Keep the
-adapter rule unconditional and verify post-run hashes or mtimes.
-
-Give every write role a brief-bound approval record and an isolated linked
-worktree under an approved root.
-
-Canonical dispatch:
-
-```bash
-CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
-"$CE/scripts/ce-dispatch.sh" \
-  --role scout \
-  --objective-id OBJ-001 \
-  --phase-id P1-design \
-  --workstream-id WS-evidence \
-  --cwd /absolute/path/to/repository \
-  --brief /absolute/path/to/brief.md \
-  --result-dir /absolute/path/to/local-results
-```
-
-Before adapter, external-review, or report operations, read
-[operations.md](references/operations.md). Treat adapter `--help` as the flag
-authority. Escalate quality failures; never hide them with another-model retry.
-
-## 7. Control concurrency and convergence
-
-- Keep one or two persistent workstreams and at most two writers per wave.
-  Fan out read-only scouts only with a convergence plan.
-- Isolate writers in project-local worktrees; serialize when isolation fails.
-- Block only consumers of missing evidence or decisions.
-- Wait for structured results. Return only decision-relevant evidence.
-
-## 8. Verify, review, and observe
-
-### Evidence and scope
-
-- Inspect the artifact and reproduce claimed verification.
-- Set review intensity by semantic risk and impact, never LOC. Define the cone
-  as changed paths plus affected behavior/contracts. Explain exclusions;
-  expand the cone or raise risk for unexplained paths.
-- Workers and reviewers may raise risk but never downgrade a required lane.
-- Inspect enough to own risk, scope, contracts, and invalidation, not
-  implementation correctness. Check all reviewer findings and evidence.
-
-### Review lanes
-
-- Enforce zero trust: an authoring agent/session never QAs its own work.
-  Focused Terra review and targeted cross-model challenge are distinct lanes;
-  apply provider-level authorship independence to the cross-model lane.
-- For a normal semantic code change, obtain one focused read-only Terra high
-  review of the impact cone.
-- Treat money, external users/APIs, security/privacy, durable data truth,
-  deployment/release, first release, and review-policy changes as high-risk.
-  Confirm risk/contracts, then require focused Terra review, a targeted
-  cross-model challenge, and final GitHub review. Challenge one named risk or
-  contract, not the whole diff.
-- Give every candidate PR appropriate deterministic verification/CI and one
-  final clean cumulative GitHub Codex bot review. Bind the bot verdict to the
-  merge-candidate head; every new commit invalidates it.
-
-### Coverage and repair
-
-- Report every evidence-backed finding with severity and confidence. Put
-  unsupported concerns under open questions; never suppress low-confidence or
-  low-severity findings.
-- State each finding's mechanism and sweep sibling instances inside the cone.
-  Fix the class, not one instance.
-- Keep this rule load-bearing: the 2026-07-27 audit found 10 of 15 round-2+
-  findings (67%) were unchanged code that round one reached but did not report.
-- Re-verify fixes that can change logic, contracts, configuration, policy,
-  machine-consumed docs, generated output, or runtime behavior. Skip targeted
-  re-verification only when the fix cannot change any of them; if uncertain,
-  re-verify. Deterministic checks follow their proof surface, and the GitHub bot
-  must close the new head.
-
-### Cross-model routing
-
-- Haiku 4.5 performs mechanical sweeps; Sonnet 5 handles bounded work; Opus 5
-  handles senior work and eligible independent review/challenge.
-- Fable 5 is the Claude-side interactive chief. In Codex it gives non-binding
-  architecture/risk/RCA advice or a named challenge; Sol owns the decision.
-  Never use Fable as an executor or review-throughput target.
-- Use Claude only with repository/data authorization. A Claude review/challenge
-  is independent only when Claude did not author the affected code, design, or
-  contract.
-- Review with Opus 5: use `low` first for ordinary risk, `medium` for a broader
-  cone, and `high` immediately for the high-risk domains above or later
-  findings. Never use `xhigh` or `max`.
-- If Claude is ineligible for review/challenge, use authorized non-authoring
-  pinned Grok 4.5. For availability, verify Opus 5 failure, then Opus 4.8 high
-  failure, then Grok. Grok is review/challenge-only.
-- Record ineligibility and fallbacks. Defer rather than omit an independent
-  review when no authorized reviewer is available.
-
-### Invalidation and records
-
-- Keep reviews as plain text bound to base/head SHA, lane/question,
-  cone/assumptions, and result/evidence. Do not build review infrastructure.
-- Carry a focused local or cross-model review to a later tip only after a
-  recorded intervening-diff check proves its paths, behavior/contracts,
-  assumptions, and evidence unchanged. Otherwise rerun.
-- Rerun deterministic checks when their proof changes. Never carry GitHub clean
-  across a commit. Batch fixes; stop at the same SHA with clean required lanes.
-- Before a write wave, run the installed token report for the objective. Stop
-  on current guardrail failures; treat historical health signals as advisory.
-
-## Calibration — 2026-07-28 ledger audit (85 ledgers, 1248 real dispatches)
-
-- This system is primarily a **review orchestrator**: 52% of real dispatches are
-  reviewer lanes. Every doctrine save on record came from review independence,
-  red-line bot closure, fail-closed gates, or verify-before-accept — none from
-  model selection. Optimize rounds and cones, never gates.
-- Escalations are driven by **sandbox/tool boundaries** (no network for npm,
-  worktree metadata writes, SSH denied), not model capability. Prefer fixing the
-  boundary so the worker can finish over chief self-execution — the chief is the
-  most expensive context and its own work gets one less review. Lateral model
-  swaps on failure have zero precedent in 1248 dispatches; keep it that way.
-- One objective, one chief: judgment-heavy/novel/cross-module arcs → the Claude
-  chief; deterministic/maintenance/well-specified arcs → Sol. The other side
-  supplies workers and reviewers only — twin chiefs on one arc is the twin
-  structure's only real waste mode.
-- **Doctrine freeze (scar-driven-only)**: a new rule requires a real scar — an
-  incident, a caught P0/P1, or measured waste. Deletions, moves, and compressions
-  need the same rigor as additions (grep consumers; governance tier follows moved
-  content; compressing history promotes stale claims to current ones). Next
-  audit: next model generation or ~quarterly. No standing token telemetry.
-
-## Completion standard
-
-Confirm persisted chief state, final artifacts, reproduced evidence, required
-review closure, and residual risk. A spawned worker, created task, or compaction
-is never proof of completion.
+Audit at model-generation changes or roughly quarterly. Keep historical
+rationale in the existing task record or version history; dated statistics
+are not current operational claims. No standing telemetry.

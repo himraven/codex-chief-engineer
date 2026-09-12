@@ -10,7 +10,7 @@ Usage: ce-dispatch.sh --role <scout|mechanic|worker|senior|reviewer> \
   [--approval-file <approval.md>] [--fallback] [--repeat-reason <reason>] \
   [--scratch-tmp] [--network <reason>]
 
-The launcher refuses Sol workers, broad or unapproved working directories, and
+The launcher refuses chief-model workers, broad or unapproved working directories, and
 oversized briefs. It also refuses a previously successful unchanged input
 unless the caller records why new evidence requires a repeat. It runs an
 isolated `codex exec --ephemeral` process with a pinned model, reasoning effort,
@@ -182,13 +182,13 @@ fi
 
 case "$role" in
   scout)
-    model="gpt-5.6-luna"; effort="low"; sandbox="read-only"; tool_budget=15; final_budget_bytes=12000
+    model="gpt-5.6-luna"; effort="high"; sandbox="read-only"; tool_budget=15; final_budget_bytes=12000
     ;;
   mechanic)
-    model="gpt-5.6-luna"; effort="low"; sandbox="workspace-write"; tool_budget=20; final_budget_bytes=16000
+    model="gpt-5.6-luna"; effort="high"; sandbox="workspace-write"; tool_budget=20; final_budget_bytes=16000
     ;;
   worker)
-    model="gpt-5.6-terra"; effort="medium"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
+    model="gpt-5.6-terra"; effort="high"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
     ;;
   senior)
     model="gpt-5.6-terra"; effort="high"; sandbox="workspace-write"; tool_budget=35; final_budget_bytes=30000
@@ -196,8 +196,8 @@ case "$role" in
   reviewer)
     model="gpt-5.6-terra"; effort="high"; sandbox="read-only"; tool_budget=25; final_budget_bytes=24000
     ;;
-  sol|chief|*)
-    printf 'Refusing worker role %q. Sol is chief-only; use a non-Sol worker role.\n' "$role" >&2
+  astra|sol|chief|*)
+    printf 'Refusing worker role %q. Chief models are decision-owner-only; use a bounded worker role.\n' "$role" >&2
     exit 65
     ;;
 esac

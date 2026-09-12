@@ -332,7 +332,31 @@ def parse_args() -> argparse.Namespace:
             "(default: CE_RUN_HOME or CODEX_HOME/chief-engineer-runs)"
         ),
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--gate-only",
+        action="store_true",
+        help="Print only the objective guard result; skip session usage telemetry",
+    )
+    args = parser.parse_args()
+    if args.gate_only and not args.objective_id:
+        parser.error("--gate-only requires --objective-id")
+    return args
+
+
+def print_dispatch_gate(objective_id: str | None, blocking: list[str]) -> int:
+    if not objective_id:
+        print(
+            "\n## Current dispatch gate: not evaluated "
+            "(pass --objective-id to scope it)"
+        )
+        return 0
+    if blocking:
+        print(f"\n## Current dispatch gate: BLOCKED ({len(blocking)})\n")
+        for alert in sorted(set(blocking)):
+            print(f"- {alert}")
+        return 2
+    print("\n## Current dispatch gate: clear")
+    return 0
 
 
 def main() -> int:
@@ -349,132 +373,138 @@ def main() -> int:
     ):
         raise SystemExit(f"--objective-id must match {LIFECYCLE_ID_PATTERN.pattern}")
 
-    db_path = args.codex_home / "state_5.sqlite"
-    if not db_path.is_file():
-        raise SystemExit(f"Codex state database is missing: {db_path}")
+    if not args.gate_only:
+        db_path = args.codex_home / "state_5.sqlite"
+        if not db_path.is_file():
+            raise SystemExit(f"Codex state database is missing: {db_path}")
 
-    connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    connection.row_factory = sqlite3.Row
-    thread_columns = {
-        row["name"] for row in connection.execute("PRAGMA table_info(threads)")
-    }
-    required_columns = {
-        "id",
-        "rollout_path",
-        "created_at",
-        "updated_at",
-        "model",
-        "reasoning_effort",
-    }
-    missing_columns = sorted(required_columns - thread_columns)
-    if missing_columns:
-        raise SystemExit(
-            "Codex state database is missing required thread columns: "
-            + ", ".join(missing_columns)
+        connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        thread_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(threads)")
+        }
+        required_columns = {
+            "id",
+            "rollout_path",
+            "created_at",
+            "updated_at",
+            "model",
+            "reasoning_effort",
+        }
+        missing_columns = sorted(required_columns - thread_columns)
+        if missing_columns:
+            raise SystemExit(
+                "Codex state database is missing required thread columns: "
+                + ", ".join(missing_columns)
+            )
+        title_column = "title" if "title" in thread_columns else "NULL AS title"
+        prompt_column = (
+            "first_user_message"
+            if "first_user_message" in thread_columns
+            else "NULL AS first_user_message"
         )
-    title_column = "title" if "title" in thread_columns else "NULL AS title"
-    prompt_column = (
-        "first_user_message"
-        if "first_user_message" in thread_columns
-        else "NULL AS first_user_message"
-    )
-    columns = (
-        "id, rollout_path, created_at, updated_at, model, "
-        f"reasoning_effort, {title_column}, {prompt_column}"
-    )
-    all_threads = {
-        row["id"]: dict(row)
-        for row in connection.execute(f"SELECT {columns} FROM threads")
-    }
-    table_names = {
-        row["name"]
-        for row in connection.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        columns = (
+            "id, rollout_path, created_at, updated_at, model, "
+            f"reasoning_effort, {title_column}, {prompt_column}"
         )
-    }
-    parents = {}
-    if "thread_spawn_edges" in table_names:
-        parents = {
-            row["child_thread_id"]: row["parent_thread_id"]
+        all_threads = {
+            row["id"]: dict(row)
+            for row in connection.execute(f"SELECT {columns} FROM threads")
+        }
+        table_names = {
+            row["name"]
             for row in connection.execute(
-                "SELECT parent_thread_id, child_thread_id FROM thread_spawn_edges"
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
-    connection.close()
+        parents = {}
+        if "thread_spawn_edges" in table_names:
+            parents = {
+                row["child_thread_id"]: row["parent_thread_id"]
+                for row in connection.execute(
+                    "SELECT parent_thread_id, child_thread_id FROM thread_spawn_edges"
+                )
+            }
+        connection.close()
 
-    candidates = [
-        row
-        for row in all_threads.values()
-        if int(row["created_at"] or 0) < end_epoch
-        and int(row["updated_at"] or 0) >= start_epoch
-        and row.get("rollout_path")
-    ]
-    metrics_by_id = {
-        row["id"]: rollout_metrics(row["rollout_path"], args.date) for row in candidates
-    }
-    active = [
-        row
-        for row in candidates
-        if metrics_by_id[row["id"]]["usage"]["turns"]
-        or metrics_by_id[row["id"]]["compactions"]
-        or metrics_by_id[row["id"]]["tool_calls"]
-        or metrics_by_id[row["id"]]["unreadable"]
-    ]
+        candidates = [
+            row
+            for row in all_threads.values()
+            if int(row["created_at"] or 0) < end_epoch
+            and int(row["updated_at"] or 0) >= start_epoch
+            and row.get("rollout_path")
+        ]
+        metrics_by_id = {
+            row["id"]: rollout_metrics(row["rollout_path"], args.date)
+            for row in candidates
+        }
+        active = [
+            row
+            for row in candidates
+            if metrics_by_id[row["id"]]["usage"]["turns"]
+            or metrics_by_id[row["id"]]["compactions"]
+            or metrics_by_id[row["id"]]["tool_calls"]
+            or metrics_by_id[row["id"]]["unreadable"]
+        ]
 
-    by_model: dict[tuple[str, str], dict[str, Any]] = defaultdict(
-        lambda: {"sessions": 0, "usage": empty_usage()}
-    )
-    groups: dict[str, dict[str, Any]] = {}
-    advisory_flags: set[str] = set()
-    for row in active:
-        thread_id = row["id"]
-        model = row["model"] or "(unknown)"
-        effort = row["reasoning_effort"] or "-"
-        metrics = metrics_by_id[thread_id]
-        by_model[(model, effort)]["sessions"] += 1
-        add_usage(by_model[(model, effort)]["usage"], metrics["usage"])
-
-        root_id = resolve_root(thread_id, parents)
-        root = all_threads.get(root_id, row)
-        label = (
-            compact(root.get("title") or root.get("first_user_message") or "(untitled)")
-            if args.include_titles
-            else f"task-{root_id[:12]}"
+        by_model: dict[tuple[str, str], dict[str, Any]] = defaultdict(
+            lambda: {"sessions": 0, "usage": empty_usage()}
         )
-        group = groups.setdefault(
-            root_id,
-            {
-                "usage": empty_usage(),
-                "sessions": 0,
-                "models": set(),
-                "label": label,
-                "flags": set(),
-            },
-        )
-        group["sessions"] += 1
-        group["models"].add(f"{model}/{effort}")
-        add_usage(group["usage"], metrics["usage"])
+        groups: dict[str, dict[str, Any]] = {}
+        advisory_flags: set[str] = set()
+        for row in active:
+            thread_id = row["id"]
+            model = row["model"] or "(unknown)"
+            effort = row["reasoning_effort"] or "-"
+            metrics = metrics_by_id[thread_id]
+            by_model[(model, effort)]["sessions"] += 1
+            add_usage(by_model[(model, effort)]["usage"], metrics["usage"])
 
-        flags: list[str] = []
-        if thread_id in parents and "sol" in model.lower():
-            flags.append("SOL_CHILD")
-        if thread_id in parents and model == "(unknown)":
-            flags.append("UNKNOWN_CHILD_MODEL")
-        if metrics["compactions"] >= COMPACTION_ADVISORY:
-            flags.append(f"COMPACTIONS={metrics['compactions']}")
-        if metrics["lifetime_compactions"] >= COMPACTION_ADVISORY:
-            flags.append(f"LIFETIME_COMPACTIONS={metrics['lifetime_compactions']}")
-        if metrics["high_context_turns"]:
-            flags.append(f"HIGH_CONTEXT_TURNS={metrics['high_context_turns']}")
-        if metrics["tool_calls"] > TOOL_LIMIT:
-            flags.append(f"TOOL_CHURN>{TOOL_LIMIT}")
-        if metrics["usage"]["total_tokens"] > DAILY_THREAD_LIMIT:
-            flags.append("HEAVY_DAILY_USAGE")
-        if metrics["unreadable"]:
-            flags.append("ROLLOUT_UNREADABLE")
-        for flag in flags:
-            group["flags"].add(flag)
-            advisory_flags.add(flag.split("=")[0])
+            root_id = resolve_root(thread_id, parents)
+            root = all_threads.get(root_id, row)
+            label = (
+                compact(
+                    root.get("title") or root.get("first_user_message") or "(untitled)"
+                )
+                if args.include_titles
+                else f"task-{root_id[:12]}"
+            )
+            group = groups.setdefault(
+                root_id,
+                {
+                    "usage": empty_usage(),
+                    "sessions": 0,
+                    "models": set(),
+                    "label": label,
+                    "flags": set(),
+                },
+            )
+            group["sessions"] += 1
+            group["models"].add(f"{model}/{effort}")
+            add_usage(group["usage"], metrics["usage"])
+
+            flags: list[str] = []
+            if thread_id in parents and any(
+                name in model.lower() for name in ("sol", "astra")
+            ):
+                flags.append("CHIEF_CHILD")
+            if thread_id in parents and model == "(unknown)":
+                flags.append("UNKNOWN_CHILD_MODEL")
+            if metrics["compactions"] >= COMPACTION_ADVISORY:
+                flags.append(f"COMPACTIONS={metrics['compactions']}")
+            if metrics["lifetime_compactions"] >= COMPACTION_ADVISORY:
+                flags.append(f"LIFETIME_COMPACTIONS={metrics['lifetime_compactions']}")
+            if metrics["high_context_turns"]:
+                flags.append(f"HIGH_CONTEXT_TURNS={metrics['high_context_turns']}")
+            if metrics["tool_calls"] > TOOL_LIMIT:
+                flags.append(f"TOOL_CHURN>{TOOL_LIMIT}")
+            if metrics["usage"]["total_tokens"] > DAILY_THREAD_LIMIT:
+                flags.append("HEAVY_DAILY_USAGE")
+            if metrics["unreadable"]:
+                flags.append("ROLLOUT_UNREADABLE")
+            for flag in flags:
+                group["flags"].add(flag)
+                advisory_flags.add(flag.split("=")[0])
 
     if args.run_home:
         run_home = args.run_home.expanduser().resolve()
@@ -602,6 +632,9 @@ def main() -> int:
         elif write_overlap > FANOUT_LIMIT:
             direct_notes.add("OUT_OF_SCOPE_WRITE_FANOUT_ALERT")
 
+    if args.gate_only:
+        return print_dispatch_gate(args.objective_id, blocking)
+
     for run in direct_usage_runs:
         direct_run_model = manifest_text(run, "requested_model", "(unknown)")
         direct_run_effort = manifest_text(run, "reasoning_effort", "-")
@@ -696,19 +729,7 @@ def main() -> int:
         print("No session-health advisories for active tasks.")
     if direct_notes:
         print("Direct-run notes: " + ", ".join(sorted(direct_notes)) + ".")
-    if not args.objective_id:
-        print(
-            "\n## Current dispatch gate: not evaluated "
-            "(pass --objective-id to scope it)"
-        )
-        return 0
-    if blocking:
-        print(f"\n## Current dispatch gate: BLOCKED ({len(blocking)})\n")
-        for alert in sorted(set(blocking)):
-            print(f"- {alert}")
-        return 2
-    print("\n## Current dispatch gate: clear")
-    return 0
+    return print_dispatch_gate(args.objective_id, blocking)
 
 
 if __name__ == "__main__":
