@@ -1,8 +1,8 @@
 # Chief-engineer operations
 
 Read this reference only when invoking the Codex adapter, an external review
-lane, or the usage report. `SKILL.md` owns doctrine; this file owns CLI and
-substrate mechanics.
+lane, or the usage report. `SKILL.md` owns orchestration; [review policy](review-policy.md) owns review
+requirements; this file owns CLI and substrate mechanics.
 
 ## Codex adapter
 
@@ -11,6 +11,19 @@ Set `CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"` and run
 implementation are authoritative for flags, model pins, budgets, sandbox
 selection, approved roots, approval records, repeat detection, and result
 manifests.
+
+Canonical dispatch (add a matching `--approval-file` for write roles):
+
+```bash
+"$CE/scripts/ce-dispatch.sh" \
+  --role scout --objective-id OBJ-001 --phase-id P1 --workstream-id WS-evidence \
+  --cwd /absolute/path/to/repository \
+  --brief /absolute/path/to/brief.md --result-dir /absolute/path/to/local-results
+```
+
+Reuse stable IDs and the existing task note for a single dispatch. IDs do not
+require separate lifecycle documents. Read [model routing](model-routing.md)
+before choosing a role; all adapter/native routes start at high or above.
 
 - Keep `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME` outside the repository.
 - If a genuinely indivisible brief exceeds the default ceiling, record the
@@ -26,7 +39,11 @@ manifests.
   stdout; `-o PATH` selects an explicit output file. Use `raw`, `xml1`, or
   `json` for machine consumption; `-p` is human-readable but unstable.
 
-## Sandbox boundaries (2026-07-29 policy; evidence = 45 ledger incidents)
+## Sandbox boundaries
+
+These restrictions preserve the 2026-07-29 policy. The version-specific
+observations below describe the audited 0.144.x runtime, not a new audit of
+today’s binary. Recheck capabilities before changing a boundary.
 
 Four boundary classes, four different answers. Do not improvise others.
 
@@ -66,7 +83,7 @@ Default to a fresh, tool-less, non-persistent turn:
 ```bash
 claude -p \
   --model claude-opus-5 \
-  --effort low \
+  --effort high \
   --tools "" \
   --no-session-persistence \
   --safe-mode \
@@ -74,19 +91,11 @@ claude -p \
   < /absolute/path/to/review-prompt.txt
 ```
 
-Use `medium` or `high` only under the effort rules in `SKILL.md`. For the
-recorded Opus 4.8 availability fallback, substitute model
-`claude-opus-4-8` and effort `high`.
-
-- Keep the prompt outside the repository. Include only the minimum authorized,
-  redacted named question, diff/context, and exact evidence contract.
-- Do not interpolate a raw diff into shell arguments.
-- Disable prior-memory carryover, redelegation, subagents, web, MCP, and writes.
-- Keep thinking enabled; control cost with effort rather than disabling it.
-- Ask for every finding with severity and confidence; filter downstream.
-- Treat listed commands/results as the evidence contract. Do not request
-  generic double-checking or rerun verification prose.
-- Report out-of-cone risk without investigating it.
+The normal eligible lane is Opus 5 high; the recorded availability fallback is
+`claude-opus-4-8` high. Follow [review policy](review-policy.md) for eligibility,
+provider authorization, fallback order, and the exact evidence contract.
+`--safe-mode` disables customizations (CLAUDE.md, skills, plugins, hooks, MCP,
+custom agents); `--no-session-persistence` prevents resume. Keep thinking on.
 
 If quality requires `Read,Grep,Glob`, expose only the authorized cone through an
 OS/filesystem sandbox or projection. Then add both flags:
@@ -102,16 +111,20 @@ For pinned Grok 4.5, send only authorized redacted non-secret context. Use a
 fresh single read-only/plan turn with memory, subagents, and web disabled where
 supported.
 
-## Usage and dispatch health
+## Dispatch gate and optional usage report
 
-Run:
+Before each write wave, run the existing guard with compact output:
 
 ```bash
-CE="${CODEX_HOME:-$HOME/.codex}/skills/chief-engineer"
-python3 "$CE/scripts/ce-token-report.py" --objective-id <objective-id>
+python3 "$CE/scripts/ce-token-report.py" --objective-id <objective-id> --gate-only
 ```
 
-The report reads local rollouts and manifests. It shows exact daily usage,
-cached versus uncached input, repeated fingerprints, phase diagnostics, and
-objective-wide write concurrency. A nonzero current dispatch/guardrail gate
-blocks the next write wave. See `ce-token-report.py --help` for optional flags.
+This uses the same manifest validation, failed-run, budget, repeat, and write
+concurrency checks as the full report. It prints only the objective's blocking
+result and reasons; it does not load the session database or rollout telemetry.
+A nonzero guard result blocks the next write wave. `--gate-only` requires an
+objective ID; it is not a way to skip the guard.
+
+For a cost investigation or periodic audit, omit `--gate-only`. The full report
+adds daily usage, cache breakdown, and session/phase diagnostics. Historical
+health signals are advisory. Do not run a standing telemetry process.

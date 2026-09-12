@@ -1,57 +1,35 @@
-# Worker brief template
+# Standalone worker brief
 
-The brief should be sufficient, not artificially short. Remove copied
-conversation and raw logs; preserve every decision, contract, and fact needed
-to execute without consulting the chief transcript.
+Use one existing task note or brief. Include enough context to work without the
+chief transcript; omit copied conversation and raw logs. For a single dispatch,
+keep lifecycle IDs inline rather than creating separate phase/workstream docs.
 
-## Lifecycle identity
+## Task and context
 
-- Objective ID:
-- Phase ID:
-- Workstream ID:
-- Persisted chief-state path:
-- Dispatch form: ephemeral | persistent continuation
+- Objective / phase / workstream IDs; existing chief-state path:
+- Exact outcome and why this slice exists:
+- Verified commit/runtime, relevant files/symbols, and evidence:
+- Fixed architecture/product decisions; decisions reserved for the chief:
 
-## Objective
+## Ownership and boundaries
 
-One sentence describing the exact outcome and why this slice exists.
+- Owned paths; forbidden paths; other active writers and integration boundary:
+- Risk tier; red-line boundary; approved scope:
+- Network/setup: none, pre-warmed cache, or authorized `--network "reason"`.
+  Read roles needing temp files use `--scratch-tmp`; chief pre-stages remote facts.
+- Dispatch form: ephemeral by default; persistent only for repeated exchanges.
+- You are not alone in the workspace. Preserve unrelated changes. Do not
+  delegate, expand scope, change contracts, or downgrade a required review lane.
+- Stop and return when evidence contradicts the brief, scope expands, or a
+  red line/undecided contract is reached.
 
-## Verified facts and fixed decisions
+## Work, verification, and return
 
-- Current commit, runtime, and evidence:
-- Relevant files, symbols, interfaces, and prior work:
-- Architecture and product decisions already made:
-- Decision that remains with the chief:
+- Exact work or named question:
+- Exact verification commands and observable success criterion:
+- Tool budget:
+- Return changed files/findings, actual commands/results, artifact or diff
+  fingerprint, remaining uncertainty, and the smallest blocked decision.
 
-## Ownership and constraints
-
-- Owned paths:
-- Forbidden paths:
-- Risk tier and red-line boundary:
-- Network and setup boundary: <none | pre-warmed cache at PATH | --network "<reason>" authorized>
-  (read roles needing temp files: dispatch with --scratch-tmp; see operations.md
-  "Sandbox boundaries" — SSH/GitHub facts are pre-staged by the chief, never
-  fetched by the worker)
-- Other active workstreams and convergence contract:
-
-## Work and stop condition
-
-1. Exact work or evidence to produce:
-2. Decision-relevant question, if any:
-3. Stop immediately and return if:
-
-## Verification
-
-```text
-<exact commands>
-```
-
-Success means: <observable criterion>.
-
-## Budget and return format
-
-- Tool budget: <N>.
-- Output: concise evidence, without raw-log or transcript dumps.
-- Return: changed files or findings; commands run; actual results; artifact or
-  diff fingerprint; unresolved uncertainty; and the next smallest decision if
-  blocked.
+For reviews, include the named cone, base/head SHA, evidence contract, and
+required finding severity/confidence from [review policy](review-policy.md).

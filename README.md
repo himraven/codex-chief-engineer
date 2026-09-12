@@ -1,41 +1,25 @@
 # Chief Engineer for Codex
 
-> Made by GPT-5.6 Sol.
+> Originally made by GPT-5.6 Sol; updated for GPT-6 Astra.
 
-> A quality-preserving lifecycle orchestration skill for Codex: keep
-> architecture and accountability with Sol, preserve decisions outside the
-> live context, and route bounded execution to the right model.
+Keep architecture, contracts, risk, and acceptance with the chief; delegate
+bounded execution with enough context and verify the result. GPT-6 Astra xhigh
+is the default Codex chief. Luna and Terra handle bounded work at high effort.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-4c1.svg)](LICENSE)
 [![Codex skill](https://img.shields.io/badge/Codex-skill-111827.svg)](skill/chief-engineer/SKILL.md)
 
-`chief-engineer` treats Sol as the architect, not the execution pool. Sol owns
-design, decomposition, risk, task topology, and final convergence. Luna and
-Terra execute bounded briefs; their output remains untrusted until verified.
-
-The skill reduces waste through context isolation and right-sized execution,
-not shorter briefs, weaker review, or lower reasoning on chief decisions.
-The installable `SKILL.md` keeps that doctrine compact; invocation and
-substrate mechanics live in an operations reference loaded only when needed.
-
-```mermaid
-flowchart TB
-  O["Objective\nDurable chief-state"] --> P1["Chief phase 1\nSol xhigh decisions"]
-  P1 --> G{"Approved topology?"}
-  G -->|"No"| S["Read-only discovery"]
-  G -->|"Yes"| E["Ephemeral executors\nLuna / Terra"]
-  G -->|"Only when stateful"| W["Reusable workstream task"]
-  E --> V["Risk-based review\nverification + required lanes"]
-  W --> V
-  V --> H["Persisted handoff"]
-  H --> P2["Fresh chief phase when justified\nPrevious chief retires"]
-```
+The entrypoint stays short. Load [model routing](skill/chief-engineer/references/model-routing.md)
+when choosing an executor, [operations](skill/chief-engineer/references/operations.md)
+when dispatching, and the shared [review policy](skill/chief-engineer/references/review-policy.md)
+when defining review lanes or accepting work. A small task needs no extra phases
+or lifecycle documents.
 
 ## What it enforces
 
 | Concern | Policy |
 |---|---|
-| Chief boundary | Sol holds decisions, not routine execution or unlimited history |
+| Chief boundary | The chief holds decisions, not routine execution or unlimited history |
 | Architecture and red-line decisions | Chief-only; never delegated to a worker |
 | Session lifecycle | One active chief; a fresh phase replaces it at a real boundary |
 | Task topology | Visible phase/workstream tasks require approval and are reused, not multiplied |
@@ -65,8 +49,18 @@ cd codex-chief-engineer
 ./install.sh
 ```
 
-The installer is deliberately non-destructive: it refuses to overwrite an
-existing skill or agent configuration.
+The installer handles first-time setup and refuses to overwrite existing targets.
+For an existing installation, update manually (`CODEX_HOME` defaults to `~/.codex`):
+
+1. Back up the installed `skills/chief-engineer/` directory and `ce-*.toml`
+   profiles outside `CODEX_HOME`; compare local customizations with the reviewed source.
+2. Copy the reviewed `skill/chief-engineer/` contents into
+   `CODEX_HOME/skills/chief-engineer/`, including every reference and script.
+   Preserve `references/approved-repo-roots.local.txt` and reconcile custom edits.
+3. Apply the matching `agents/ce-{mechanic,worker,senior}.toml` changes to
+   `CODEX_HOME/agents/`, preserving custom instructions. Move legacy native
+   `ce-scout.toml` and `ce-reviewer.toml` outside that directory: read roles use
+   the adapter, and the installer refuses those profiles.
 
 ## Configure the local repository boundary
 
@@ -103,21 +97,12 @@ Ask Codex to use `$chief-engineer` for a multi-workstream task. The chief will
 inspect reality, design the solution and task topology, then wait for explicit
 approval before write-capable work begins.
 
-The lifecycle has three levels:
-
-- **Objective:** one durable outcome and one persisted `chief-state`.
-- **Phase:** one active Sol decision context. A fresh phase starts only at a
-  natural boundary or verified context-health failure and replaces the old one.
-- **Workstream:** one bounded ownership lane. Keep a visible task only when it
-  needs repeated future exchanges; ordinary workers stay ephemeral.
-
-A compaction does not create a task. A small objective normally uses one chief
-task, a medium objective one or two sequential phases, and a genuinely large
-objective two to four named phases across its lifetime—not hundreds of
-sessions. Outside a natural phase boundary, compaction or high context must be
-paired with observed quality degradation before rollover. When the active Codex
-surface supports task messaging, reuse the same workstream task and follow it
-with compact waits. Do not fork a long history and call that a context reset.
+Use one active chief per objective. Adapter dispatches require stable objective,
+phase, and workstream IDs; a single dispatch can use the existing task note.
+Create a fresh phase only at a real handoff or demonstrated context-health
+failure, persisting decisions and evidence first. Compaction alone does not
+justify rollover. Visible tasks require a user request; reuse persistent tasks
+when repeated exchanges justify them.
 
 For an approved standalone worker, use the installed adapter:
 
@@ -138,7 +123,7 @@ Use the included [worker brief template](skill/chief-engineer/references/worker-
 After a human explicitly approves the write, create the
 [approval record](skill/chief-engineer/references/write-approval.md) with the
 brief SHA-256. The adapter refuses write dispatch without a matching record,
-Sol as a worker, non-Git directories, shared checkouts, roots outside the local
+chief models as workers, non-Git directories, shared checkouts, roots outside the local
 allowlist, oversized briefs, and result directories inside the repository.
 Keeping `--result-dir`, `CE_RUN_HOME`, and `CODEX_HOME` outside the repository
 prevents adapter artifacts from becoming new evidence. The adapter also
@@ -169,112 +154,44 @@ For dispatch flags, review invocation details, and usage-report mechanics, read
 [`references/operations.md`](skill/chief-engineer/references/operations.md).
 The adapter's `--help` remains authoritative for its interface.
 
-## Model routing
+## Model routing and review
 
-The bundled defaults use the GPT-5.6 family available to the original setup.
-If your Codex account exposes different model IDs, update the skill table,
-matching write-capable `agents/` TOML files, and the primary/fallback role pins
-in `skill/chief-engineer/scripts/ce-dispatch.sh`. For an existing installation,
-make the same changes in its installed copies; the installer never overwrites
-them.
+| Responsibility | Default model / effort |
+|---|---|
+| Chief, architecture, plan and RCA advice | GPT-6 Astra / xhigh |
+| Scout and mechanic | Luna / high |
+| Bounded or senior implementation | Terra / high |
+| Independent implementation review | Terra / high |
 
-| Tier | Role | Default model / effort |
-|---|---|---|
-| T0 | Scout and mechanic | Luna / low |
-| T1 | Bounded implementation | Terra / medium |
-| T2 | Cross-file implementation | Terra / high |
-| Review | Read-only code review | Terra / high |
-| T3 | Architecture and integration | Sol / xhigh |
+All selectable routes and availability fallbacks start at high. The hosted
+GitHub bot's model is not selectable. Read
+[model routing](skill/chief-engineer/references/model-routing.md) for provider
+roles, availability fallbacks, and exact chief model ID. Adapter model pins,
+effort, budgets, and sandboxes live in `ce-dispatch.sh`; keep the optional
+write-agent TOMLs in `agents/` aligned when changing them. Scout and reviewer
+always use the adapter's real sandbox. Native write agents are usable only when
+the active surface proves model, effort, fresh context, and sandbox behavior.
 
-The `agents/` directory provides optional native definitions only for mechanic,
-worker, and senior write roles. Native ephemeral agents are suitable for those
-roles when the active surface proves the requested role, model, reasoning
-effort, sandbox, and fresh-context behavior. Scouts and reviewers are not
-shipped as native definitions and always use the adapter because their
-read-only boundary must be enforced by a real sandbox. The direct dispatch
-adapter is the portable fallback for other roles when any required property is
-not observable. An older installation that still contains `ce-scout.toml` or
-`ce-reviewer.toml` under `CODEX_HOME/agents` must move those files out before
-installing this policy; the installer fails closed while either remains.
+Read the shared [review policy](skill/chief-engineer/references/review-policy.md)
+before selecting lanes or claiming completion. Normal semantic code requires
+focused independent Terra high review. High-risk work adds a separate named
+cross-model challenge. Every PR requires appropriate deterministic checks/CI
+and a clean cumulative GitHub Codex bot verdict bound to the candidate head;
+a new commit invalidates that GitHub clean. Moving the policy into a reference
+does not change these requirements.
 
-## Review lifecycle
+## Pre-wave dispatch guard
 
-Review is risk-based, not a fixed stack repeated for every change. All candidate
-PRs receive the checks that prove their changed surface and a final clean
-cumulative GitHub Codex bot review whose recorded head SHA equals the
-merge-candidate tip. Any new candidate commit invalidates the prior GitHub
-clean. Normal semantic code changes also receive one focused, read-only Terra
-high review by default; the recorded reviewer fallback applies only after
-verified availability failure.
+Before each write wave:
 
-After a review fix, targeted re-verification is required when the change can
-affect logic, contracts, configuration, policy, machine-consumed docs, generated
-output, or runtime behavior. Skip only when none can change; if uncertain,
-re-verify. Deterministic checks still follow their proof surface, and the final
-GitHub clean must bind the new head.
+```bash
+python3 "$CE/scripts/ce-token-report.py" --objective-id OBJ-001 --gate-only
+```
 
-High-risk changes—money, external user behavior or API, security/privacy,
-durable-data truth, deployment/release, first release, and review-policy
-changes—add chief-owned risk and contract confirmation plus a targeted
-independent cross-model challenge and the focused Terra lane above. That
-challenge tests the named risk or contract; it is not a duplicate generic
-full-diff review. The chief classifies
-semantic risk, defines impact cones and review questions, and decides which
-lanes or evidence a change invalidates. The cone accounts for every changed
-path/area and affected behavior/contracts; path groups/globs and concise
-reasoned exclusions are enough. An unexplained changed path expands the cone
-and invalidates relevant lanes or triggers high-risk reclassification. Workers
-and reviewers may surface risk but cannot self-downgrade required lanes. The
-chief inspects the candidate diff/artifact enough for risk, scope, contract, and
-evidence checks; this is not an implementation-correctness review and cannot
-replace Terra, cross-model, or GitHub review. Claude roles: Haiku 4.5 handles
-mechanical sweeps only; Sonnet 5 handles bounded implementation/tests/debugging;
-Opus 5 handles senior cross-file execution plus eligible independent
-review/challenge. Fable 5 is the Claude-side interactive chief for
-architecture/risk/RCA on the Claude surface. In a Codex run, Fable has no chief
-role: it may provide only non-binding architecture/risk/RCA advice or a named,
-non-binding challenge to Sol; Sol remains the sole active chief and decision
-owner for that Codex run. Fable is never an executor or review-throughput
-target. Any Claude lane
-requires Anthropic to be permitted by repository/data policy or explicit owner
-authorization. A Claude review, including Opus 4.8 fallback, is independent
-only when Claude did not author the affected change, including Claude-owned
-design/contract decisions. The focused Terra review and targeted cross-model
-challenge are distinct lanes and cannot be satisfied by the same review. If
-Claude is ineligible because it authored the affected change or Anthropic lacks
-that authorization, record the ineligibility and route the separate targeted
-challenge to an authorized non-authoring provider (normally pinned Grok 4.5),
-or defer if no authorized provider is available. For an eligible Claude review,
-use a fresh non-resumed read-only turn in safe mode with no redelegation, no
-subagents, web, MCP, or writes. Default to a tool-less stdin review packet
-containing only the authorized/redacted named question, diff/context, and exact
-evidence contract. Safe mode disables CLAUDE.md/skills/plugins/hooks/MCP/custom
-agents and no-session-persistence prevents resume. If quality genuinely requires
-Read/Grep/Glob, use an OS/filesystem sandbox or projection exposing only the
-authorized cone; only then
-add paired `--tools "Read,Grep,Glob"` and `--allowedTools "Read,Grep,Glob"`.
-Prompt-only path restrictions are not access control and must not authorize a
-partial repo. Request every finding with confidence and severity, stay inside
-the authorized chief-bound cone, and use listed reproduced results without
-generic double-check/re-verify reruns. Its
-availability order is Opus 5, then separately verified Opus 4.8 at high effort,
-then authorized Grok 4.5; Grok never writes, tests, or debugs. Grok receives
-only the minimum redacted non-secret context and only when repository/data
-policy or explicit owner
-authorization permits that provider; otherwise it is unavailable. Record every
-verified failure, ineligibility, and fallback. If no approved/authorized
-independent reviewer is available, defer the work and leave high-risk/review-
-policy closure incomplete.
-
-Review findings and claimed evidence are checked before acceptance. A concise
-plain-text review summary records the base and head SHA, its question and
-impact cone, assumptions, and result/evidence. Focused local/cross-model lanes
-may carry to a later candidate tip only when the chief records an
-intervening-diff invalidation check showing their bound paths/areas,
-behavior/contracts, assumptions, and evidence unchanged; otherwise they rerun.
-Deterministic checks follow their proof surface. GitHub clean never carries
-across a new candidate commit. Batch fixes before asking for the final GitHub
-review again; clean required lanes on the same candidate SHA end review.
+This runs the same manifest, failed-run, budget, repeat, and writer-concurrency
+checks as the full report, with only the blocking result and reasons. It needs
+an objective ID and skips the session database and rollout telemetry. A nonzero
+result blocks the next write wave. This is a caller-run check, not an adapter hook.
 
 ## Optional token observability
 
@@ -303,8 +220,9 @@ counted once on the local completion day rather than guessed or double-counted.
 
 Use `--include-titles` only when it is safe for those local titles to appear in
 your terminal output. Historical compaction and long-context signals are
-advisory: they can justify a fresh phase but never create one automatically or
-block unrelated work. The general report does not evaluate a blocking gate.
+advisory: rollover also needs a natural boundary or observed quality degradation;
+these signals never create tasks automatically or block unrelated work. The
+general report does not evaluate a blocking gate.
 Add `--objective-id` to gate the next wave for one objective; only its failed
 dispatches, invalid manifests, unchanged repeats, budget violations, and
 concurrent write fan-out above two across all of its phases make the report

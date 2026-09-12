@@ -51,6 +51,11 @@ class PackagingPolicyTests(unittest.TestCase):
             )
             self.assertNotIn("ce-scout.toml", installed_agents)
             self.assertNotIn("ce-reviewer.toml", installed_agents)
+            installed_skill = codex_home / "skills/chief-engineer"
+            for name in ("model-routing.md", "review-policy.md", "operations.md"):
+                self.assertTrue((installed_skill / "references" / name).is_file())
+            for path in (codex_home / "agents").glob("*.toml"):
+                self.assertIn('model_reasoning_effort = "high"', path.read_text())
 
     def test_installer_rejects_stale_adapter_only_native_roles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -211,7 +216,69 @@ class TokenReportTests(unittest.TestCase):
             command.extend(["--objective-id", objective_id])
         if run_home:
             command.extend(["--run-home", str(run_home)])
-        return run(command, env=env)
+        result = run(command, env=env)
+        if objective_id:
+            compact = run([*command, "--gate-only"], env=env)
+            self.assertEqual(compact.returncode, result.returncode, compact.stderr)
+            self.assertEqual(
+                compact.stdout.strip(),
+                (
+                    "## Current dispatch gate:"
+                    + result.stdout.split("## Current dispatch gate:", 1)[1]
+                ).strip()
+                if "## Current dispatch gate:" in result.stdout
+                else "",
+            )
+        return result
+
+    def test_gate_only_requires_an_objective(self) -> None:
+        result = run(["python3", str(REPORT), "--gate-only"])
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--gate-only requires --objective-id", result.stderr)
+
+    def test_gate_only_ignores_session_database_and_keeps_manifest_failures(
+        self,
+    ) -> None:
+        command = [
+            "python3",
+            str(REPORT),
+            "--gate-only",
+            "--objective-id",
+            "OBJ-1",
+            "--date",
+            "2026-07-24",
+            "--codex-home",
+            str(self.codex_home),
+        ]
+        database = self.codex_home / "state_5.sqlite"
+        database.unlink()
+        missing = run(command)
+        self.assertEqual(missing.returncode, 0, missing.stderr)
+        self.assertEqual(missing.stdout.strip(), "## Current dispatch gate: clear")
+        database.write_text("not a database", encoding="utf-8")
+        corrupt = run(command)
+        self.assertEqual(corrupt.returncode, 0, corrupt.stderr)
+        self.write_manifest(
+            "failed",
+            fingerprint="failed",
+            started=100,
+            finished=110,
+            exit_status=1,
+        )
+        failed = run(command)
+        self.assertEqual(failed.returncode, 2, failed.stderr)
+        self.assertIn("DIRECT_RUN_FAILED:failed", failed.stdout)
+
+    def test_budget_failure_blocks_both_report_modes(self) -> None:
+        path = self.write_manifest(
+            "budget", fingerprint="budget", started=100, finished=110
+        )
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["budget_state"] = "tool_budget_exceeded"
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        result = self.report("OBJ-1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("tool_budget_exceeded:budget", result.stdout)
 
     def write_manifest(
         self,
@@ -1014,6 +1081,126 @@ printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_inpu
             self.assertEqual(failed_manifest["exit_status"], 75)
 
 
+class RoutingTests(unittest.TestCase):
+    def test_primary_and_fallback_cli_pins_start_at_high(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = root / "repo"
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repo),
+                    "-c",
+                    "user.name=Fixture",
+                    "-c",
+                    "user.email=fixture@example.invalid",
+                    "commit",
+                    "--allow-empty",
+                    "-qm",
+                    "fixture",
+                ],
+                check=True,
+            )
+            worktree = repo / ".worktrees/worker"
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repo),
+                    "worktree",
+                    "add",
+                    "-qb",
+                    "task/fixture",
+                    str(worktree),
+                ],
+                check=True,
+            )
+            allowlist = root / "allowlist.txt"
+            allowlist.write_text(str(repo) + "\n", encoding="utf-8")
+            bindir = root / "bin"
+            bindir.mkdir()
+            fake_codex = bindir / "codex"
+            fake_codex.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys\n"
+                "from pathlib import Path\n"
+                "args = sys.argv[1:]\n"
+                'Path(args[args.index("-o") + 1]).write_text(json.dumps(args))\n'
+                'print(json.dumps({"type": "turn.completed", "usage": '
+                '{"input_tokens": 1, "output_tokens": 1}}))\n',
+                encoding="utf-8",
+            )
+            fake_codex.chmod(0o755)
+            env = os.environ.copy()
+            env.update(
+                {
+                    "PATH": str(bindir) + os.pathsep + env["PATH"],
+                    "CODEX_HOME": str(root / "codex-home"),
+                    "CE_RUN_HOME": str(root / "runs"),
+                    "CE_APPROVED_REPO_ROOTS": str(allowlist),
+                }
+            )
+            for role in ("scout", "mechanic", "worker", "senior", "reviewer"):
+                for fallback in (False, True):
+                    with self.subTest(role=role, fallback=fallback):
+                        identity = f"{role}-{fallback}"
+                        brief = root / f"{identity}.md"
+                        brief.write_text(f"Fixture {identity}. No real model runs.\n")
+                        approval = root / f"{identity}-approval.md"
+                        approval.write_text(
+                            "approval: approved\napproved_by: Fixture\nbrief_sha256: "
+                            + hashlib.sha256(brief.read_bytes()).hexdigest()
+                            + "\n"
+                        )
+                        read_role = role in ("scout", "reviewer")
+                        results = root / f"results-{identity}"
+                        command = [
+                            "bash",
+                            str(DISPATCH),
+                            "--role",
+                            role,
+                            "--objective-id",
+                            "OBJ-ROUTING",
+                            "--phase-id",
+                            "P1",
+                            "--workstream-id",
+                            identity,
+                            "--cwd",
+                            str(repo if read_role else worktree),
+                            "--brief",
+                            str(brief),
+                            "--approval-file",
+                            str(approval),
+                            "--result-dir",
+                            str(results),
+                        ]
+                        if fallback:
+                            command.append("--fallback")
+                        result = run(command, env=env)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        manifest = json.loads(
+                            next(results.glob("*.manifest.json")).read_text()
+                        )
+                        argv = json.loads(next(results.glob("*.final.md")).read_text())
+                        mechanical = role in ("scout", "mechanic")
+                        expected = (
+                            ("gpt-5.4-mini" if mechanical else "gpt-5.4")
+                            if fallback
+                            else ("gpt-5.6-luna" if mechanical else "gpt-5.6-terra")
+                        )
+                        self.assertEqual(argv[argv.index("-m") + 1], expected)
+                        self.assertIn('model_reasoning_effort="high"', argv)
+                        self.assertEqual(manifest["requested_model"], expected)
+                        self.assertEqual(manifest["reasoning_effort"], "high")
+                        self.assertEqual(
+                            manifest["sandbox"],
+                            "read-only" if read_role else "workspace-write",
+                        )
+                        self.assertFalse(manifest["network_access"])
+
+
 class BoundaryFlagTests(unittest.TestCase):
     """`--scratch-tmp` and `--network` are permission knobs; pin their guards.
 
@@ -1063,6 +1250,13 @@ class BoundaryFlagTests(unittest.TestCase):
                 result = self._dispatch(role, "--scratch-tmp")
                 self.assertEqual(result.returncode, 64)
                 self.assertIn("--scratch-tmp is for read roles", result.stderr)
+
+    def test_chief_models_cannot_be_dispatched_as_workers(self) -> None:
+        for role in ("astra", "sol", "chief"):
+            with self.subTest(role=role):
+                result = self._dispatch(role)
+                self.assertEqual(result.returncode, 65)
+                self.assertIn("Chief models are decision-owner-only", result.stderr)
 
     def test_network_rejects_read_roles(self) -> None:
         """Read roles stay fail-closed: the chief pre-stages refs and caches."""
