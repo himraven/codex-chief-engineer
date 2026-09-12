@@ -49,11 +49,18 @@ cd codex-chief-engineer
 ./install.sh
 ```
 
-The installer is deliberately non-destructive: it refuses to overwrite an
-existing skill or agent configuration. For an existing installation, synchronize
-the reviewed skill files and write-agent profiles while preserving the local
-allowlist. Legacy `ce-scout.toml` or `ce-reviewer.toml` files must be moved outside
-`CODEX_HOME/agents`; the installer refuses them because read roles use the adapter.
+The installer handles first-time setup and refuses to overwrite existing targets.
+For an existing installation, update manually (`CODEX_HOME` defaults to `~/.codex`):
+
+1. Back up the installed `skills/chief-engineer/` directory and `ce-*.toml`
+   profiles outside `CODEX_HOME`; compare local customizations with the reviewed source.
+2. Copy the reviewed `skill/chief-engineer/` contents into
+   `CODEX_HOME/skills/chief-engineer/`, including every reference and script.
+   Preserve `references/approved-repo-roots.local.txt` and reconcile custom edits.
+3. Apply the matching `agents/ce-{mechanic,worker,senior}.toml` changes to
+   `CODEX_HOME/agents/`, preserving custom instructions. Move legacy native
+   `ce-scout.toml` and `ce-reviewer.toml` outside that directory: read roles use
+   the adapter, and the installer refuses those profiles.
 
 ## Configure the local repository boundary
 
