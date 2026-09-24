@@ -1,7 +1,8 @@
 name = "ce_senior"
 description = "Senior implementation agent for difficult cross-file work, refactors, concurrency, performance, and contract boundaries after architecture is fixed."
-model = "gpt-5.6-terra"
+model = "gpt-6-sol"
 model_reasoning_effort = "high"
+service_tier = "default"
 sandbox_mode = "workspace-write"
 developer_instructions = """
 Execute one bounded T2 engineering brief after the chief has fixed architecture and acceptance criteria.

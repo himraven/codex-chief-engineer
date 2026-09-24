@@ -1142,6 +1142,32 @@ class RoutingTests(unittest.TestCase):
                     "CE_APPROVED_REPO_ROOTS": str(allowlist),
                 }
             )
+            expected_models = {
+                False: {
+                    "scout": "gpt-6-luna",
+                    "mechanic": "gpt-6-luna",
+                    "worker": "gpt-6-sol",
+                    "senior": "gpt-6-sol",
+                    "reviewer": "gpt-6-sol",
+                },
+                True: {
+                    "scout": "gpt-5.6-luna",
+                    "mechanic": "gpt-5.6-luna",
+                    "worker": "gpt-5.6-terra",
+                    "senior": "gpt-5.6-sol",
+                    "reviewer": "gpt-5.6-sol",
+                },
+            }
+            native_role_files = {
+                "mechanic": "ce-mechanic.toml",
+                "worker": "ce-worker.toml",
+                "senior": "ce-senior.toml",
+            }
+            for role, filename in native_role_files.items():
+                native = (REPO_ROOT / "agents" / filename).read_text().splitlines()
+                self.assertIn(f'model = "{expected_models[False][role]}"', native)
+                self.assertIn('model_reasoning_effort = "high"', native)
+                self.assertIn('service_tier = "default"', native)
             for role in ("scout", "mechanic", "worker", "senior", "reviewer"):
                 for fallback in (False, True):
                     with self.subTest(role=role, fallback=fallback):
@@ -1184,14 +1210,10 @@ class RoutingTests(unittest.TestCase):
                             next(results.glob("*.manifest.json")).read_text()
                         )
                         argv = json.loads(next(results.glob("*.final.md")).read_text())
-                        mechanical = role in ("scout", "mechanic")
-                        expected = (
-                            ("gpt-5.4-mini" if mechanical else "gpt-5.4")
-                            if fallback
-                            else ("gpt-5.6-luna" if mechanical else "gpt-5.6-terra")
-                        )
+                        expected = expected_models[fallback][role]
                         self.assertEqual(argv[argv.index("-m") + 1], expected)
                         self.assertIn('model_reasoning_effort="high"', argv)
+                        self.assertIn('service_tier="default"', argv)
                         self.assertEqual(manifest["requested_model"], expected)
                         self.assertEqual(manifest["reasoning_effort"], "high")
                         self.assertEqual(
@@ -1251,12 +1273,12 @@ class BoundaryFlagTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 64)
                 self.assertIn("--scratch-tmp is for read roles", result.stderr)
 
-    def test_chief_models_cannot_be_dispatched_as_workers(self) -> None:
+    def test_chief_and_model_names_are_not_dispatch_roles(self) -> None:
         for role in ("astra", "sol", "chief"):
             with self.subTest(role=role):
                 result = self._dispatch(role)
                 self.assertEqual(result.returncode, 65)
-                self.assertIn("Chief models are decision-owner-only", result.stderr)
+                self.assertIn("Choose a bounded role name", result.stderr)
 
     def test_network_rejects_read_roles(self) -> None:
         """Read roles stay fail-closed: the chief pre-stages refs and caches."""
