@@ -4,7 +4,8 @@
 
 Keep architecture, contracts, risk, and acceptance with the chief; delegate
 bounded execution with enough context and verify the result. GPT-6 Astra xhigh
-is the default Codex chief. Luna and Terra handle bounded work at high effort.
+is the default Codex chief. GPT-6 Luna handles scouting and mechanical work; GPT-6 Sol handles implementation and review
+at high effort.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-4c1.svg)](LICENSE)
 [![Codex skill](https://img.shields.io/badge/Codex-skill-111827.svg)](skill/chief-engineer/SKILL.md)
@@ -24,9 +25,9 @@ or lifecycle documents.
 | Session lifecycle | One active chief; a fresh phase replaces it at a real boundary |
 | Task topology | Visible phase/workstream tasks require approval and are reused, not multiplied |
 | Compaction | Health signal only; never an automatic “create task” trigger |
-| Routine execution | Model-pinned Luna or Terra workers with a sufficient standalone brief |
+| Routine execution | Model-pinned GPT-6 Luna or Sol workers with a sufficient standalone brief |
 | Review intensity | Semantic risk and impact, never LOC |
-| Normal semantic code | Focused read-only Terra high review by default (recorded reviewer fallback only after verified availability failure) |
+| Normal semantic code | Focused read-only GPT-6 Sol high review by default (recorded reviewer fallback only after verified availability failure) |
 | High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
 | Review repair | Re-verify fixes that can change logic, contracts, configuration, policy, machine-consumed docs, generated output, or runtime behavior; skip only when none can change, and re-verify when uncertain |
 | PR closure | Appropriate deterministic verification/CI and one clean cumulative GitHub Codex bot review whose recorded head SHA equals the merge-candidate tip |
@@ -39,7 +40,7 @@ or lifecycle documents.
 
 ## Quick start
 
-Requirements: Codex CLI, Git, Bash, `jq`, Python 3.9+, and either `shasum` or
+Requirements: Codex CLI (tested baseline 0.156.1), Git, Bash, `jq`, Python 3.9+, and either `shasum` or
 `sha256sum`, plus the model IDs used by your account.
 
 ```bash
@@ -159,9 +160,14 @@ The adapter's `--help` remains authoritative for its interface.
 | Responsibility | Default model / effort |
 |---|---|
 | Chief, architecture, plan and RCA advice | GPT-6 Astra / xhigh |
-| Scout and mechanic | Luna / high |
-| Bounded or senior implementation | Terra / high |
-| Independent implementation review | Terra / high |
+| Scout and mechanic | GPT-6 Luna / high |
+| Bounded or senior implementation | GPT-6 Sol / high |
+| Independent implementation review | GPT-6 Sol / high |
+
+GPT-5.6 models remain explicit availability fallbacks; retired 5.4 models are
+removed. Verify a real call on the actual client before activating new pins.
+The independent challenge uses Opus 5.5 high, with Grok 4.7 high only under the
+shared eligibility policy. Existing Claude-side settings are not rewritten.
 
 All selectable routes and availability fallbacks start at high. The hosted
 GitHub bot's model is not selectable. Read
@@ -170,11 +176,13 @@ roles, availability fallbacks, and exact chief model ID. Adapter model pins,
 effort, budgets, and sandboxes live in `ce-dispatch.sh`; keep the optional
 write-agent TOMLs in `agents/` aligned when changing them. Scout and reviewer
 always use the adapter's real sandbox. Native write agents are usable only when
-the active surface proves model, effort, fresh context, and sandbox behavior.
+the active surface proves model, effort, effective service tier, fresh context,
+and sandbox behavior. Config acceptance alone does not prove the tier; use the
+adapter when the effective native configuration is unobservable.
 
 Read the shared [review policy](skill/chief-engineer/references/review-policy.md)
 before selecting lanes or claiming completion. Normal semantic code requires
-focused independent Terra high review. High-risk work adds a separate named
+focused independent review using the pinned reviewer route. High-risk work adds a separate named
 cross-model challenge. Every PR requires appropriate deterministic checks/CI
 and a clean cumulative GitHub Codex bot verdict bound to the candidate head;
 a new commit invalidates that GitHub clean. Moving the policy into a reference

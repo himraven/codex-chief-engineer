@@ -18,9 +18,9 @@ and stricter applicable repository/data rules remain binding.
   This is not implementation-correctness review and cannot replace the focused
   reviewer, cross-model challenge, or GitHub lane. Connector tools retrieve or
   write review data; they do not supply review judgment.
-- Every normal semantic code change needs one focused read-only Terra high
-  review of its impact cone, using the recorded fallback only after verified
-  availability failure.
+- Every normal semantic code change needs a focused read-only review of its
+  impact cone, using the reviewer in [model routing](model-routing.md). Use its
+  recorded fallback only after verified availability failure.
 - Money, external user behavior/APIs, security/privacy, durable data truth,
   deployment/release, first release, and **review-policy changes** are high-risk.
   They require chief-owned risk/contract confirmation, the focused reviewer,
@@ -44,16 +44,16 @@ and stricter applicable repository/data rules remain binding.
 Use a provider only when repository/data policy or explicit owner authorization
 allows it. Send only the minimum authorized, redacted non-secret context.
 
-1. An eligible independent Claude lane uses **`claude-opus-5` / high**, with
+1. An eligible independent Claude lane uses **`claude-opus-5-5` / high**, with
    thinking enabled. Do not start below high or default to xhigh/max.
 2. If Claude authored the affected change or lacks data authorization, it is
    **ineligible**. Record why and route the separate named challenge directly
-   to an authorized, non-authoring pinned Grok 4.5. This is not an Opus
+   to an authorized, non-authoring pinned Grok 4.7 high. This is not an Opus
    availability failure. If that route is unavailable, defer closure.
-3. For eligible Claude availability failures only: verify Opus 5 failure, then
-   try the recorded **`claude-opus-4-8` / high** fallback. Only after separately
+3. For eligible Claude availability failures only: verify Opus 5.5 failure, then
+   try the recorded **`claude-opus-5` / high** fallback. Only after separately
    verified failure of that fallback may authorized, non-authoring pinned
-   Grok 4.5 supply the independent review/challenge. Never use this fallback
+   Grok 4.7 high supply the independent review/challenge. Never use this fallback
    for implementation, editing, tests, or debugging.
 4. Record all failures, ineligibility, and fallback use. If an approved,
    authorized independent reviewer is unavailable, leave high-risk/review-policy

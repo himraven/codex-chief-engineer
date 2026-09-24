@@ -39,6 +39,12 @@ before choosing a role; all adapter/native routes start at high or above.
   stdout; `-o PATH` selects an explicit output file. Use `raw`, `xml1`, or
   `json` for machine consumption; `-p` is human-readable but unstable.
 
+Before activating new model pins, check the actual `codex --version` and perform
+a bounded real request on that login surface. Codex 0.156.1 is the tested baseline;
+0.153.4 rejected GPT-6 Sol/Luna on the same ChatGPT account. Use the existing
+client update mechanism, then verify adapter isolation and a real bounded run.
+Do not interpret a catalog entry as successful account access.
+
 ## Sandbox boundaries
 
 These restrictions preserve the 2026-07-29 policy. The version-specific
@@ -82,7 +88,7 @@ Default to a fresh, tool-less, non-persistent turn:
 
 ```bash
 claude -p \
-  --model claude-opus-5 \
+  --model claude-opus-5-5 \
   --effort high \
   --tools "" \
   --no-session-persistence \
@@ -91,8 +97,8 @@ claude -p \
   < /absolute/path/to/review-prompt.txt
 ```
 
-The normal eligible lane is Opus 5 high; the recorded availability fallback is
-`claude-opus-4-8` high. Follow [review policy](review-policy.md) for eligibility,
+The normal eligible lane is Opus 5.5 high; the recorded availability fallback is
+`claude-opus-5` high. Follow [review policy](review-policy.md) for eligibility,
 provider authorization, fallback order, and the exact evidence contract.
 `--safe-mode` disables customizations (CLAUDE.md, skills, plugins, hooks, MCP,
 custom agents); `--no-session-persistence` prevents resume. Keep thinking on.
@@ -107,9 +113,16 @@ OS/filesystem sandbox or projection. Then add both flags:
 
 Prompt-only path restrictions are not access control.
 
-For pinned Grok 4.5, send only authorized redacted non-secret context. Use a
-fresh single read-only/plan turn with memory, subagents, and web disabled where
-supported.
+For pinned `grok-4.7` at high effort, send only authorized redacted non-secret
+context. Verify `grok models` and a real request on the intended login. Use a
+fresh single turn with no resume, memory, subagents, web or model-accessible
+tools. On the tested Grok Build 0.2.72 surface, the relevant flags are
+`--model grok-4.7 --effort high --tools "" --no-memory --no-subagents
+--disable-web-search --max-turns 1`. Pass a prompt file rather than shell-expanded
+content. These flags are not a filesystem or configuration-isolation claim;
+Grok may discover local configuration. If the authorized context boundary
+cannot be demonstrated, use a suitably isolated projection or leave the lane
+unavailable. Do not substitute a floating `grok-build`/`latest` alias.
 
 ## Dispatch gate and optional usage report
 

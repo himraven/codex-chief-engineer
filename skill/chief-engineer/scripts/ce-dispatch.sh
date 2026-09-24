@@ -182,30 +182,31 @@ fi
 
 case "$role" in
   scout)
-    model="gpt-5.6-luna"; effort="high"; sandbox="read-only"; tool_budget=15; final_budget_bytes=12000
+    model="gpt-6-luna"; effort="high"; sandbox="read-only"; tool_budget=15; final_budget_bytes=12000
     ;;
   mechanic)
-    model="gpt-5.6-luna"; effort="high"; sandbox="workspace-write"; tool_budget=20; final_budget_bytes=16000
+    model="gpt-6-luna"; effort="high"; sandbox="workspace-write"; tool_budget=20; final_budget_bytes=16000
     ;;
   worker)
-    model="gpt-5.6-terra"; effort="high"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
+    model="gpt-6-sol"; effort="high"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
     ;;
   senior)
-    model="gpt-5.6-terra"; effort="high"; sandbox="workspace-write"; tool_budget=35; final_budget_bytes=30000
+    model="gpt-6-sol"; effort="high"; sandbox="workspace-write"; tool_budget=35; final_budget_bytes=30000
     ;;
   reviewer)
-    model="gpt-5.6-terra"; effort="high"; sandbox="read-only"; tool_budget=25; final_budget_bytes=24000
+    model="gpt-6-sol"; effort="high"; sandbox="read-only"; tool_budget=25; final_budget_bytes=24000
     ;;
   astra|sol|chief|*)
-    printf 'Refusing worker role %q. Chief models are decision-owner-only; use a bounded worker role.\n' "$role" >&2
+    printf 'Refusing worker role %q. Choose a bounded role name (scout, mechanic, worker, senior, reviewer); model IDs are not role names.\n' "$role" >&2
     exit 65
     ;;
 esac
 
 if [[ "$fallback" == true ]]; then
   case "$role" in
-    scout|mechanic) model="gpt-5.4-mini" ;;
-    worker|senior|reviewer) model="gpt-5.4" ;;
+    scout|mechanic) model="gpt-5.6-luna" ;;
+    worker) model="gpt-5.6-terra" ;;
+    senior|reviewer) model="gpt-5.6-sol" ;;
   esac
 fi
 
@@ -443,6 +444,7 @@ fi
 # unflagged write run and every scratch run (Terra P1, 2026-07-29).
 codex_overrides=(
   -c "model_reasoning_effort=\"$effort\""
+  -c 'service_tier="default"'
   -c "sandbox_workspace_write.network_access=$network_access"
 )
 if [[ "$scratch_tmp" == true ]]; then
