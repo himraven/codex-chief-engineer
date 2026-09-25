@@ -30,7 +30,7 @@ or lifecycle documents.
 | Normal semantic code | Focused read-only GPT-6 Sol high review by default (recorded reviewer fallback only after verified availability failure) |
 | High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
 | Review repair | Re-verify fixes that can change logic, contracts, configuration, policy, machine-consumed docs, generated output, or runtime behavior; skip only when none can change, and re-verify when uncertain |
-| PR closure | Appropriate deterministic verification/CI and one clean cumulative GitHub Codex bot review whose recorded head SHA equals the merge-candidate tip |
+| PR closure | Appropriate deterministic verification/CI and one cumulative GitHub Codex bot review bound to the candidate head; [review policy](skill/chief-engineer/references/review-policy.md) defines clean and accepted deferrals |
 | Approval | Write workers require an explicit, brief-bound approval record |
 | Repository boundary | Every adapter role is limited to a local allowlist of Git roots |
 | Write isolation | Every write worker uses a dedicated project-local linked worktree and lock |
@@ -167,7 +167,8 @@ The adapter's `--help` remains authoritative for its interface.
 GPT-5.6 models remain explicit availability fallbacks; retired 5.4 models are
 removed. Verify a real call on the actual client before activating new pins.
 The independent challenge uses Opus 5.5 high, with Grok 4.7 high only under the
-shared eligibility policy. Existing Claude-side settings are not rewritten.
+shared eligibility policy. Claude-surface executor assignments live in the
+Claude chief entrypoint.
 
 All selectable routes and availability fallbacks start at high. The hosted
 GitHub bot's model is not selectable. Read
@@ -184,9 +185,10 @@ Read the shared [review policy](skill/chief-engineer/references/review-policy.md
 before selecting lanes or claiming completion. Normal semantic code requires
 focused independent review using the pinned reviewer route. High-risk work adds a separate named
 cross-model challenge. Every PR requires appropriate deterministic checks/CI
-and a clean cumulative GitHub Codex bot verdict bound to the candidate head;
-a new commit invalidates that GitHub clean. Moving the policy into a reference
-does not change these requirements.
+and a cumulative GitHub Codex bot review bound to the candidate head;
+the [review policy](skill/chief-engineer/references/review-policy.md) defines
+clean, accepted deferrals, and commit invalidation. Moving the policy into a
+reference does not change the required lanes.
 
 ## Pre-wave dispatch guard
 

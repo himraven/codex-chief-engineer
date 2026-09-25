@@ -31,9 +31,13 @@ and stricter applicable repository/data rules remain binding.
   destruction, and deployment/operations changes retain required GitHub closure.
   Relocating their policy does not lower their review classification.
 - Every candidate PR requires appropriate deterministic checks/CI and one
-  final clean **cumulative** `chatgpt-codex-connector[bot]` review. Its recorded
-  head SHA must equal the merge-candidate tip. Every new candidate commit
-  invalidates the GitHub clean. Use the repository's existing ship workflow.
+  final clean **cumulative** `chatgpt-codex-connector[bot]` review. Clean means
+  no findings requiring a fix remain: only explicitly adjudicated deferrals
+  meeting the criteria below may remain. Preserve the raw bot verdict and
+  distinguish "no findings" from "accepted deferrals". Silence, unavailable
+  review, or unadjudicated findings are not clean. The review's recorded head
+  SHA must equal the merge-candidate tip. Every new candidate commit invalidates
+  the GitHub clean. Use the repository's existing ship workflow.
 - An authoring agent/session cannot QA its own work. Focused local review and
   the targeted cross-model challenge are distinct lanes and cannot be supplied
   by the same review. Apply provider-level authorship independence to the
@@ -76,9 +80,20 @@ are not access control. Never interpolate raw diffs into shell arguments.
   suppress findings because either is low. Put unsupported concerns under
   open questions. Report out-of-cone risks without investigating them.
 - State each finding's mechanism and sweep sibling instances inside the cone.
-  Fix the class. Known bugs cannot be called complete. If a finding is deferred,
-  record the chief-verified dormant/unreachable condition, owner, and forcing function in an
-  existing tracked backlog; currently actionable findings require resolution.
+  Fix the class. A deferred defect remains open in an existing tracked backlog;
+  never claim it fixed. Currently actionable findings require resolution unless
+  they meet the exception below.
+- Preserve the existing deferral for a chief-verified dormant/unreachable
+  finding. Record its evidence, owner, and forcing function in the backlog.
+- After one complete review round with no new P0/P1, a remaining P2-or-lower
+  finding may be deferred when the chief verifies that it affects only
+  non-product presentation or maintenance of tests, harnesses or wording, or
+  addresses only hypothetical future callers. Classify by effect, not file
+  location: a defect affecting current product behavior, required verification
+  validity, security/data guarantees, or release decisions is ineligible.
+  Record each accepted deferral, its evidence, owner, and forcing function in
+  an existing tracked backlog. This exception can apply within high-risk work,
+  but removes no required review lane or CI check.
 - Re-verify fixes affecting logic, contracts, configuration, policy,
   machine-consumed docs, generated output, or runtime behavior. Skip targeted
   re-verification only when none of those can change; if uncertain, re-verify.
