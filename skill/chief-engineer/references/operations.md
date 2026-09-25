@@ -122,8 +122,8 @@ fresh single turn with no resume, memory, subagents, web or model-accessible
 tools. On the tested Grok Build 0.2.72 surface, the relevant flags are
 `--model grok-4.7 --effort high --tools "" --no-memory --no-subagents
 --disable-web-search --max-turns 1`. Pass a prompt file rather than shell-expanded
-content. A 2026-09-25 containment probe observed ambient Claude configuration
-loading and an attempted MCP connection despite disabled tools.
+content. A 2026-09-25 configuration inspection still discovered ambient Claude
+plugin hooks/settings and shared skills with compatibility switches off.
 Per-run `GROK_{CLAUDE,CURSOR}_{SKILLS,RULES,AGENTS,MCPS,HOOKS}_ENABLED=false`
 controls those compatibility layers, but does not certify that plugin/settings
 discovery or Grok-native MCP/configuration is disabled. A separate configuration
