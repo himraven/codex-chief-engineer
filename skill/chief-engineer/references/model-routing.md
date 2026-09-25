@@ -68,13 +68,11 @@ retries; do not claim an exact quota saving from the published price ratio.
 
 Any Claude or Grok lane requires repository/data-policy permission or explicit
 owner authorization. Send only the authorized, redacted context. The active
-surface keeps its chief. This refresh does not change the Claude entrypoint or
-its runtime settings. Preserve its existing assignments until its owner updates
-them: Fable 5 chief at high or above, Haiku 4.5 mechanical-only, Sonnet 5 bounded
-implementation/tests/debugging, and Opus 5 senior work. Fable is not a review
+surface keeps its chief. The Claude chief entrypoint owns Claude-surface
+executor assignments and their verification record; this file keeps the effort
+floor and the cross-provider lanes below. Fable is not an executor or a review
 throughput target. The effort floor applies to each route; prefer the Codex
-mechanic when a Claude mechanical route cannot honor it. Current Claude model
-upgrade recommendations are a separate handoff, not silently activated here.
+mechanic when a Claude mechanical route cannot honor it.
 
 The Codex-owned cross-model lane uses **`claude-opus-5-5` / high**, with
 **`claude-opus-5` / high** only after verified availability failure. The separate

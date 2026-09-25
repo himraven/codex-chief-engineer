@@ -84,8 +84,9 @@ procedures into these entrypoints.
   enough to own scope, contracts, assumptions, and evidence invalidation.
 - A normal semantic change needs focused independent review. High-risk work
   additionally needs a separate named cross-model challenge and GitHub closure.
-  Every candidate PR needs CI/deterministic evidence and a clean cumulative
-  GitHub Codex bot verdict bound to its exact candidate head.
+  Every candidate PR needs CI/deterministic evidence and a cumulative GitHub
+  Codex bot review bound to its exact candidate head; [review policy](references/review-policy.md)
+  defines clean and accepted deferrals.
 - Chief scope/contract inspection does not replace implementation review.
   Check findings and their evidence; fix sibling instances inside the cone.
 - Preserve decisions, artifacts, reproduced checks, required review closure,

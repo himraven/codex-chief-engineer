@@ -102,6 +102,9 @@ The normal eligible lane is Opus 5.5 high; the recorded availability fallback is
 provider authorization, fallback order, and the exact evidence contract.
 `--safe-mode` disables customizations (CLAUDE.md, skills, plugins, hooks, MCP,
 custom agents); `--no-session-persistence` prevents resume. Keep thinking on.
+Ask for conclusions, evidence, and confidence, never private internal reasoning.
+If a request is declined with `reasoning_extraction`, correct the prompt; that
+decline is not model availability failure and does not permit fallback.
 
 If quality requires `Read,Grep,Glob`, expose only the authorized cone through an
 OS/filesystem sandbox or projection. Then add both flags:
@@ -119,10 +122,17 @@ fresh single turn with no resume, memory, subagents, web or model-accessible
 tools. On the tested Grok Build 0.2.72 surface, the relevant flags are
 `--model grok-4.7 --effort high --tools "" --no-memory --no-subagents
 --disable-web-search --max-turns 1`. Pass a prompt file rather than shell-expanded
-content. These flags are not a filesystem or configuration-isolation claim;
-Grok may discover local configuration. If the authorized context boundary
-cannot be demonstrated, use a suitably isolated projection or leave the lane
-unavailable. Do not substitute a floating `grok-build`/`latest` alias.
+content. A 2026-09-25 containment probe observed ambient Claude configuration
+loading and an attempted MCP connection despite disabled tools.
+Per-run `GROK_{CLAUDE,CURSOR}_{SKILLS,RULES,AGENTS,MCPS,HOOKS}_ENABLED=false`
+controls those compatibility layers, but does not certify that plugin/settings
+discovery or Grok-native MCP/configuration is disabled. A separate configuration
+directory and OS-enforced read boundary produced an inspection with no external
+instructions, skills, hooks, plugins or MCP servers; real repository reads were
+denied. The projection and sandbox were host-specific. Neither tools nor compatibility
+flags establish filesystem/configuration isolation alone. Demonstrate the
+authorized context boundary with an available isolated projection, or leave the
+lane unavailable. Do not substitute a floating `grok-build`/`latest` alias.
 
 ## Dispatch gate and optional usage report
 
