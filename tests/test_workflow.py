@@ -1146,9 +1146,9 @@ class RoutingTests(unittest.TestCase):
                 False: {
                     "scout": "gpt-6-luna",
                     "mechanic": "gpt-6-luna",
-                    "worker": "gpt-6-sol",
-                    "senior": "gpt-6-sol",
-                    "reviewer": "gpt-6-sol",
+                    "worker": "gpt-6.1-sol",
+                    "senior": "gpt-6.1-sol",
+                    "reviewer": "gpt-6.1-sol",
                 },
                 True: {
                     "scout": "gpt-5.6-luna",

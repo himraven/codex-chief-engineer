@@ -188,13 +188,13 @@ case "$role" in
     model="gpt-6-luna"; effort="high"; sandbox="workspace-write"; tool_budget=20; final_budget_bytes=16000
     ;;
   worker)
-    model="gpt-6-sol"; effort="high"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
+    model="gpt-6.1-sol"; effort="high"; sandbox="workspace-write"; tool_budget=25; final_budget_bytes=24000
     ;;
   senior)
-    model="gpt-6-sol"; effort="high"; sandbox="workspace-write"; tool_budget=35; final_budget_bytes=30000
+    model="gpt-6.1-sol"; effort="high"; sandbox="workspace-write"; tool_budget=35; final_budget_bytes=30000
     ;;
   reviewer)
-    model="gpt-6-sol"; effort="high"; sandbox="read-only"; tool_budget=25; final_budget_bytes=24000
+    model="gpt-6.1-sol"; effort="high"; sandbox="read-only"; tool_budget=25; final_budget_bytes=24000
     ;;
   astra|sol|chief|*)
     printf 'Refusing worker role %q. Choose a bounded role name (scout, mechanic, worker, senior, reviewer); model IDs are not role names.\n' "$role" >&2

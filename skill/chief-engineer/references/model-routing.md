@@ -1,10 +1,12 @@
 # Model routing
 
-Read before selecting an executor. Model refresh: 2026-09-24.
+Read before selecting an executor. Model refresh: 2026-09-30.
 
 ## Decision owner and effort floor
 
-- Codex chief and architecture/plan/RCA advice: **`gpt-6-astra` / `xhigh`**.
+- Codex chief and architecture/plan/RCA advice: **`gpt-6-astra` / `xhigh`**,
+  Standard speed. This is the workflow's recommended chief configuration;
+  the active chat's model selection controls what actually runs.
   Do not silently change the model of an already-running task. Another provider
   supplies bounded execution or non-binding advice, never a second chief.
 - All selectable executors and fallbacks use **high or above**. This owner
@@ -22,9 +24,9 @@ Read before selecting an executor. Model refresh: 2026-09-24.
 |---|---|---|---|
 | scout | Read-only search, inventory, logs, triage | `gpt-6-luna` / high | `gpt-5.6-luna` / high |
 | mechanic | Deterministic formatting, renames, boilerplate | `gpt-6-luna` / high | `gpt-5.6-luna` / high |
-| worker | Bounded implementation, tests, fixes | `gpt-6-sol` / high | `gpt-5.6-terra` / high |
-| senior | Cross-file refactors, concurrency, performance | `gpt-6-sol` / high | `gpt-5.6-sol` / high |
-| reviewer | Independent focused implementation review | `gpt-6-sol` / high | `gpt-5.6-sol` / high |
+| worker | Bounded implementation, tests, fixes | `gpt-6.1-sol` / high | `gpt-5.6-terra` / high |
+| senior | Cross-file refactors, concurrency, performance | `gpt-6.1-sol` / high | `gpt-5.6-sol` / high |
+| reviewer | Independent focused implementation review | `gpt-6.1-sol` / high | `gpt-5.6-sol` / high |
 
 Scouts and reviewers always use the adapter's real read-only boundary. Senior
 has a larger bounded work budget, not permission to redesign the architecture.
@@ -40,6 +42,14 @@ profile accepting `service_tier` does not prove the child honors it. Verify the
 effective tier as well as model/effort and sandbox before native dispatch; if
 that evidence is unavailable, use the adapter with its explicit per-call tier.
 Ultra's automatic delegation conflicts with the bounded no-redelegation contract.
+Fast is a separate speed/cost choice, not a reasoning level or quality upgrade.
+Use Standard for background execution. Consider Fast only for a user-requested
+latency priority on the critical path, through a supported, verified per-run
+configuration. The current adapter explicitly pins Standard and has no Fast
+switch; changing the main chat's speed does not change its child processes.
+Check whether time is spent in model generation, tools, tests, or independent
+review before paying for faster inference; do not claim end-to-end speedups
+from a token-speed or billing multiplier.
 
 Use `--fallback` once only after verified model/client availability failure;
 record the error and selected route. A failed task, weak answer or tool permission
@@ -53,8 +63,10 @@ remains unavailable. Retired `gpt-5.4` and `gpt-5.4-mini` are not fallbacks.
 
 ## Client, subscription and activation
 
-The tested CLI baseline is **Codex 0.156.1** with ChatGPT sign-in. On the same
-account, 0.153.4 rejected GPT-6 Sol/Luna while 0.156.1 completed real requests.
+The GPT-6.1 Sol/high/Standard route was verified on **Codex 0.159.2** with
+ChatGPT sign-in. The same account's 0.156.1 client rejected GPT-6.1 Sol.
+Luna and the retained 5.6 fallbacks carry their earlier verification; this
+refresh does not claim a new 0.159.2 availability test for every retained route.
 Check the actual executor binary, login surface and a bounded real call before
 activating a route; a catalog entry or accepted model flag is insufficient.
 A newer CLI does not update an already-loaded Desktop agent definition.
@@ -83,6 +95,9 @@ an implementation, testing or debugging executor in this workflow. GitHub's
 hosted bot model is not selectable; its required closure remains unchanged.
 
 Current product guidance: [Codex models](https://learn.chatgpt.com/docs/models),
+[GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+[subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents),
+[speed modes](https://learn.chatgpt.com/docs/agent-configuration/speed),
 [subscription usage](https://learn.chatgpt.com/docs/pricing),
 [Claude models](https://platform.claude.com/docs/en/models/overview), and
 [Grok 4.7](https://docs.x.ai/developers/models/grok-4.7). Recheck actual availability
