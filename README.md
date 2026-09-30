@@ -40,7 +40,7 @@ or lifecycle documents.
 
 ## Quick start
 
-Requirements: Codex CLI (tested baseline 0.159.2), Git, Bash, `jq`, Python 3.9+, and either `shasum` or
+Requirements: Codex CLI (GPT-6.1 Sol verified on 0.159.2), Git, Bash, `jq`, Python 3.9+, and either `shasum` or
 `sha256sum`, plus the model IDs used by your account.
 
 ```bash
@@ -167,7 +167,9 @@ The adapter's `--help` remains authoritative for its interface.
 Choose the chief model in the main chat. The skill describes the division of
 work; the adapter and custom-agent files select the executor models. A main-chat
 model or Fast toggle does not override the adapter's explicit child settings.
-All roles default to Standard speed; the current adapter has no Fast switch.
+The adapter explicitly requests Standard speed and has no Fast switch. Native
+profiles also request Standard; verify their effective settings before use.
+The chief's speed follows the main chat, with Standard recommended.
 See [model routing](skill/chief-engineer/references/model-routing.md) before
 choosing a different speed. Already-running agents keep their configuration;
 use the adapter when Desktop still exposes stale custom-agent definitions.

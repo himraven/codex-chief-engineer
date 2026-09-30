@@ -63,8 +63,10 @@ remains unavailable. Retired `gpt-5.4` and `gpt-5.4-mini` are not fallbacks.
 
 ## Client, subscription and activation
 
-The tested CLI baseline is **Codex 0.159.2** with ChatGPT sign-in. On the same
-account, 0.156.1 rejected GPT-6.1 Sol while 0.159.2 completed a bounded real request.
+The GPT-6.1 Sol/high/Standard route was verified on **Codex 0.159.2** with
+ChatGPT sign-in. The same account's 0.156.1 client rejected GPT-6.1 Sol.
+Luna and the retained 5.6 fallbacks carry their earlier verification; this
+refresh does not claim a new 0.159.2 availability test for every retained route.
 Check the actual executor binary, login surface and a bounded real call before
 activating a route; a catalog entry or accepted model flag is insufficient.
 A newer CLI does not update an already-loaded Desktop agent definition.
