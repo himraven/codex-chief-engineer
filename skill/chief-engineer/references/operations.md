@@ -40,8 +40,8 @@ before choosing a role; all adapter/native routes start at high or above.
   `json` for machine consumption; `-p` is human-readable but unstable.
 
 Before activating new model pins, check the actual `codex --version` and perform
-a bounded real request on that login surface. Codex 0.156.1 is the tested baseline;
-0.153.4 rejected GPT-6 Sol/Luna on the same ChatGPT account. Use the existing
+a bounded real request on that login surface. Codex 0.159.2 is the tested baseline;
+0.156.1 rejected GPT-6.1 Sol on the same ChatGPT account. Use the existing
 client update mechanism, then verify adapter isolation and a real bounded run.
 Do not interpret a catalog entry as successful account access.
 

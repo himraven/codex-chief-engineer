@@ -28,6 +28,10 @@ context and unnecessary coordination while preserving correctness gates.
 - Before choosing an executor, read [model routing](references/model-routing.md).
   Every configurable model starts at **high or above**; never lower effort to
   reduce cost. The chief remains responsible for the final decision.
+- The chat's selected model runs the chief; executor models are configured
+  separately. This skill cannot switch the current chat's model or retune
+  already-running agents. Verify the actual dispatch configuration, not just
+  the model or Fast setting shown in the main chat.
 
 ## Approve and delegate
 

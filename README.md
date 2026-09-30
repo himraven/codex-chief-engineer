@@ -4,7 +4,7 @@
 
 Keep architecture, contracts, risk, and acceptance with the chief; delegate
 bounded execution with enough context and verify the result. GPT-6 Astra xhigh
-is the default Codex chief. GPT-6 Luna handles scouting and mechanical work; GPT-6 Sol handles implementation and review
+is the default Codex chief. GPT-6 Luna handles scouting and mechanical work; GPT-6.1 Sol handles implementation and review
 at high effort.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-4c1.svg)](LICENSE)
@@ -25,9 +25,9 @@ or lifecycle documents.
 | Session lifecycle | One active chief; a fresh phase replaces it at a real boundary |
 | Task topology | Visible phase/workstream tasks require approval and are reused, not multiplied |
 | Compaction | Health signal only; never an automatic “create task” trigger |
-| Routine execution | Model-pinned GPT-6 Luna or Sol workers with a sufficient standalone brief |
+| Routine execution | Model-pinned GPT-6 Luna or GPT-6.1 Sol workers with a sufficient standalone brief |
 | Review intensity | Semantic risk and impact, never LOC |
-| Normal semantic code | Focused read-only GPT-6 Sol high review by default (recorded reviewer fallback only after verified availability failure) |
+| Normal semantic code | Focused read-only GPT-6.1 Sol high review by default (recorded reviewer fallback only after verified availability failure) |
 | High-risk change | Chief risk/contract confirmation, targeted independent cross-model challenge, the focused reviewer lane above, then final GitHub review |
 | Review repair | Re-verify fixes that can change logic, contracts, configuration, policy, machine-consumed docs, generated output, or runtime behavior; skip only when none can change, and re-verify when uncertain |
 | PR closure | Appropriate deterministic verification/CI and one cumulative GitHub Codex bot review bound to the candidate head; [review policy](skill/chief-engineer/references/review-policy.md) defines clean and accepted deferrals |
@@ -40,7 +40,7 @@ or lifecycle documents.
 
 ## Quick start
 
-Requirements: Codex CLI (tested baseline 0.156.1), Git, Bash, `jq`, Python 3.9+, and either `shasum` or
+Requirements: Codex CLI (tested baseline 0.159.2), Git, Bash, `jq`, Python 3.9+, and either `shasum` or
 `sha256sum`, plus the model IDs used by your account.
 
 ```bash
@@ -161,8 +161,16 @@ The adapter's `--help` remains authoritative for its interface.
 |---|---|
 | Chief, architecture, plan and RCA advice | GPT-6 Astra / xhigh |
 | Scout and mechanic | GPT-6 Luna / high |
-| Bounded or senior implementation | GPT-6 Sol / high |
-| Independent implementation review | GPT-6 Sol / high |
+| Bounded or senior implementation | GPT-6.1 Sol / high |
+| Independent implementation review | GPT-6.1 Sol / high |
+
+Choose the chief model in the main chat. The skill describes the division of
+work; the adapter and custom-agent files select the executor models. A main-chat
+model or Fast toggle does not override the adapter's explicit child settings.
+All roles default to Standard speed; the current adapter has no Fast switch.
+See [model routing](skill/chief-engineer/references/model-routing.md) before
+choosing a different speed. Already-running agents keep their configuration;
+use the adapter when Desktop still exposes stale custom-agent definitions.
 
 GPT-5.6 models remain explicit availability fallbacks; retired 5.4 models are
 removed. Verify a real call on the actual client before activating new pins.
